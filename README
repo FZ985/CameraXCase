@@ -1,0 +1,27 @@
+相机拍照
+
+
+参考google CameraX中的UseCase模式开发
+
+无需关心相机预览，无需关心拍照逻辑
+
+继承 CameraXUseCase库中的 UseCase 实现你的界面UI展示
+然后调用：
+camera.preview(lifecycleOwner, UseCase... useCases);
+
+
+CameraXUseCaseImpl提供一套默认的UseCase实现，此库为证件照的拍照功能
+
+
+UseCase说明：
+  UseCase是基于canvas绘制你的ui界面，
+  比如：
+     聚焦框
+     拍照按钮
+     拍照后的预览
+
+  除此之外，如果不想使用canvas来绘制各个界面，UseCase提供了addView(child,layoutParams)函数
+  以添加控件的方式实现界面的UI定制
+
+  每一个界面的展示都由开发者去定制
+
