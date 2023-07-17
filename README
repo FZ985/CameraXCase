@@ -19,6 +19,7 @@ UseCase说明：
      聚焦框
      拍照按钮
      拍照后的预览
+     等等
 
   除此之外，如果不想使用canvas来绘制各个界面，UseCase提供了addView(child,layoutParams)函数
   以添加控件的方式实现界面的UI定制
