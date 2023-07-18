@@ -8,6 +8,7 @@ package camerax.usecase;
 public class EventCode {
 
     public static final int EVENT_TAKE_PICTURE = "TakePictureEvent".hashCode();
+
     public static final int EVENT_TAKE_PICTURE_ERROR = "TakePictureErrorEvent".hashCode();
 
     public static final int EVENT_SWITCH_BACK = "LensFacingBack".hashCode();
