@@ -96,7 +96,7 @@ public class LensFacingCase extends BaseUseCase {
     private void scale(ImageView view) {
         ScaleAnimation animScale = new ScaleAnimation(0.85f, 1, 0.85f, 1,
                 Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-        animScale.setDuration(1000);
+        animScale.setDuration(300);
         animScale.setFillAfter(true);
         animScale.setInterpolator(new DecelerateInterpolator());
         view.startAnimation(animScale);
