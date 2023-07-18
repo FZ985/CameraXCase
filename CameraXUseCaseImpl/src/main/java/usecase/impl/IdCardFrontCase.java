@@ -48,6 +48,7 @@ public class IdCardFrontCase extends LayerCase {
         }
     }
 
+    @SuppressLint("DrawAllocation")
     @Override
     public void onDraw(Canvas canvas) {
         //国徽矩形
@@ -55,11 +56,11 @@ public class IdCardFrontCase extends LayerCase {
 
         //绘制国徽
         if (frontBmp != null) {
-            @SuppressLint("DrawAllocation") PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(getPrimaryColor(), PorterDuff.Mode.SRC_ATOP);
+            PorterDuffColorFilter colorFilter = new PorterDuffColorFilter(getPrimaryColor(), PorterDuff.Mode.SRC_ATOP);
             frontPaint.setColorFilter(colorFilter);
-            float personLeft = frontRect.left;
-            float personTop = frontRect.top;
-            canvas.drawBitmap(frontBmp, personLeft, personTop, frontPaint);
+            float bLeft = frontRect.left;
+            float bTop = frontRect.top;
+            canvas.drawBitmap(frontBmp, bLeft, bTop, frontPaint);
         }
     }
 
