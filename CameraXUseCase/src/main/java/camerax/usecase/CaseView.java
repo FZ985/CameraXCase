@@ -13,7 +13,7 @@ import android.view.View;
  * description : 将 UseCase 绑定到 CaseView中
  */
 @SuppressLint("ViewConstructor")
-final class CaseView extends View {
+public final class CaseView extends View {
     private UseCase useCase;
 
     public CaseView(Context context, UseCase useCase) {

@@ -43,6 +43,7 @@ public class FocusCase extends BaseUseCase {
 
     @Override
     public void onDraw(Canvas canvas) {
+        //绘制简单的十字线
         canvas.drawLine(left, top + (bottom - top) / 2, right, top + (bottom - top) / 2, mPaint);
         canvas.drawLine(left + (right - left) / 2, top, left + (right - left) / 2, bottom, mPaint);
     }

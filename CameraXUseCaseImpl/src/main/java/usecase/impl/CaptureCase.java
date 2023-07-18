@@ -10,7 +10,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
-import camerax.usecase.CameraXView;
+import camerax.usecase.EventCode;
 
 /**
  * author : JFZ
@@ -84,7 +84,7 @@ public class CaptureCase extends BaseUseCase {
             insideRadius = (int) animation.getAnimatedValue();
             invalidate();
             if (animation.getCurrentPlayTime() >= animation.getDuration()) {
-                postData(CameraXView.EVENT_TAKE_PICTURE);
+                postData(EventCode.EVENT_TAKE_PICTURE);
             }
         });
         anim.start();

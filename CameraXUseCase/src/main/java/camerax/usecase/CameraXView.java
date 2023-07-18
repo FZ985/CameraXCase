@@ -42,12 +42,17 @@ public class CameraXView extends RelativeLayout {
     private ProcessCameraProvider cameraProvider;
     private ImageCapture imageCapture;
 
+    private RelativeLayout caseContainer;//CaseView的容器
+
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    public static final int EVENT_TAKE_PICTURE = "takePictureEvent".hashCode();
-    public static final int EVENT_TAKE_PICTURE_ERROR = "takePictureErrorEvent".hashCode();
-
     private final List<UseCase> caseGroup = new ArrayList<>();
+
+    LifecycleOwner lifecycleOwner;
+    Camera camera;
+
+    int mFlashMode = ImageCapture.FLASH_MODE_OFF;
+    int mLensFacing = CameraSelector.LENS_FACING_BACK;
 
     private UseCase.CaseDataObserver innerObserver = new UseCase.CaseDataObserver() {
         @Override
@@ -55,8 +60,18 @@ public class CameraXView extends RelativeLayout {
             if (data == null) return;
             if (data instanceof Integer) {
                 int event = (int) data;
-                if (event == EVENT_TAKE_PICTURE) {
+                if (event == EventCode.EVENT_TAKE_PICTURE) {
                     takePicture();
+                } else if (event == EventCode.EVENT_SWITCH_BACK) {
+                    switchLensFacing(CameraSelector.LENS_FACING_BACK, mFlashMode);
+                } else if (event == EventCode.EVENT_SWITCH_FRONT) {
+                    switchLensFacing(CameraSelector.LENS_FACING_FRONT, mFlashMode);
+                } else if (event == EventCode.EVENT_FLASH_MODE_AUTO) {
+                    switchLensFacing(mLensFacing, ImageCapture.FLASH_MODE_AUTO);
+                } else if (event == EventCode.EVENT_FLASH_MODE_ON) {
+                    switchLensFacing(mLensFacing, ImageCapture.FLASH_MODE_ON);
+                } else if (event == EventCode.EVENT_FLASH_MODE_OFF) {
+                    switchLensFacing(mLensFacing, ImageCapture.FLASH_MODE_OFF);
                 }
             }
         }
@@ -79,6 +94,7 @@ public class CameraXView extends RelativeLayout {
         setWillNotDraw(false);
         View view = View.inflate(getContext(), R.layout.camerax_view, this);
         cameraView = view.findViewById(R.id.camera_);
+        caseContainer = view.findViewById(R.id.case_container);
         UseCase useCase = new UseCase() {
             @Override
             public int getCaseId() {
@@ -115,7 +131,7 @@ public class CameraXView extends RelativeLayout {
                 public void onError(@NonNull ImageCaptureException exception) {
                     handler.post(() -> {
                         for (UseCase uc : caseGroup) {
-                            uc.postData(EVENT_TAKE_PICTURE_ERROR);
+                            uc.postData(EventCode.EVENT_TAKE_PICTURE_ERROR);
                         }
                         Log.e("CameraXView", "拍照失败：" + exception.getMessage());
                     });
@@ -124,60 +140,81 @@ public class CameraXView extends RelativeLayout {
         }
     }
 
-    public void preview(@NonNull LifecycleOwner lifecycleOwner, UseCase... useCases) {
+    private void switchLensFacing(int lensFacing, int flashMode) {
+        this.mLensFacing = lensFacing;
+        this.mFlashMode = flashMode;
+        initCamera(null);
+    }
+
+    private void initCamera(Runnable runnable) {
         post(() -> {
-            try {
-                int width = getWidth();
-                int height = getHeight();
-                int screenAspectRatio = aspectRatio(width, height);
-                int rotation = cameraView.getDisplay().getRotation();
-                // CameraProvider
-                cameraProvider = ProcessCameraProvider.getInstance(getContext()).get();
+            int width = getWidth();
+            int height = getHeight();
+            int screenAspectRatio = aspectRatio(width, height);
+            int rotation = cameraView.getDisplay().getRotation();
+            // CameraProvider
+            ProcessCameraProvider provider = cameraProvider;
 
-                // CameraSelector
-                CameraSelector cameraSelector = new CameraSelector.Builder()
-                        .requireLensFacing(CameraSelector.LENS_FACING_BACK)
-                        .build();
+            // CameraSelector
+            CameraSelector cameraSelector = new CameraSelector.Builder()
+                    .requireLensFacing(mLensFacing)
+                    .build();
 
-                // Preview
-                Preview preview = new Preview.Builder()
-                        .setTargetAspectRatio(screenAspectRatio)
-                        .setTargetRotation(rotation)
-                        .build();
+            // Preview
+            Preview preview = new Preview.Builder()
+                    .setTargetAspectRatio(screenAspectRatio)
+                    .setTargetRotation(rotation)
+                    .build();
 
-                // ImageCapture
-                imageCapture = new ImageCapture.Builder()
-                        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                        .setJpegQuality(100)
-                        .setTargetAspectRatio(screenAspectRatio)
-                        .setTargetRotation(rotation)
-                        .build();
+            // ImageCapture
+            imageCapture = new ImageCapture.Builder()
+                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                    .setFlashMode(mFlashMode)
+                    .setJpegQuality(100)
+                    .setTargetAspectRatio(screenAspectRatio)
+                    .setTargetRotation(rotation)
+                    .build();
 
-                // Must unbind the use-cases before rebinding them
-                cameraProvider.unbindAll();
+            // Must unbind the use-cases before rebinding them
+            provider.unbindAll();
 
-                // A variable number of use-cases can be passed here -
-                // camera provides access to CameraControl & CameraInfo
-                Camera camera = cameraProvider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture);
-                // Attach the viewfinder's surface provider to preview use case
-                preview.setSurfaceProvider(cameraView.getSurfaceProvider());
-                //添加caseview
-                if (useCases != null) {
-                    caseGroup.clear();
-                    caseGroup.addAll(Arrays.asList(useCases));
-                    for (UseCase uc : caseGroup) {
-                        RelativeLayout.LayoutParams params = new LayoutParams(width, height);
-                        CaseView caseView = new CaseView(getContext(), uc);
-                        caseView.setLayoutParams(params);
-                        uc.onCreate(getContext(), this, cameraView, caseView, camera, width, height, caseGroup);
-                        uc.registerCaseObserver(innerObserver);
-                        addView(caseView, params);
-                    }
-                }
-            } catch (Exception e) {
-                Log.e(tag, "创建相机失败：" + e.getMessage());
+            // A variable number of use-cases can be passed here -
+            // camera provides access to CameraControl & CameraInfo
+            camera = provider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture);
+            // Attach the viewfinder's surface provider to preview use case
+            preview.setSurfaceProvider(cameraView.getSurfaceProvider());
+            if (runnable != null) {
+                runnable.run();
             }
         });
+    }
+
+
+    public void preview(@NonNull LifecycleOwner lifecycleOwner, UseCase... useCases) {
+        try {
+            this.lifecycleOwner = lifecycleOwner;
+            if (useCases != null) {
+                caseGroup.clear();
+                caseGroup.addAll(Arrays.asList(useCases));
+            }
+            cameraProvider = ProcessCameraProvider.getInstance(getContext()).get();
+            initCamera(() -> {
+                int width = getWidth();
+                int height = getHeight();
+                //添加CaseView
+                caseContainer.removeAllViews();
+                for (UseCase uc : caseGroup) {
+                    RelativeLayout.LayoutParams params = new LayoutParams(width, height);
+                    CaseView caseView = new CaseView(getContext(), uc);
+                    caseView.setLayoutParams(params);
+                    uc.onCreate(getContext(), this, cameraView, caseView, camera, width, height, caseGroup);
+                    uc.registerCaseObserver(innerObserver);
+                    caseContainer.addView(caseView, params);
+                }
+            });
+        } catch (Exception e) {
+            Log.e("CameraXView", "预览失败");
+        }
     }
 
     private int aspectRatio(int width, int height) {
@@ -190,13 +227,22 @@ public class CameraXView extends RelativeLayout {
         return AspectRatio.RATIO_16_9;
     }
 
-    @Override
-    protected void onDetachedFromWindow() {
+    private void releaseObserver() {
         try {
             for (UseCase uc : caseGroup) {
                 uc.unregisterCaseObserver(innerObserver);
-                uc.onDestroy();
             }
+        } catch (Exception e) {
+            Log.e("CameraXView", "销毁 catch:" + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        mFlashMode = ImageCapture.FLASH_MODE_OFF;
+        mLensFacing = CameraSelector.LENS_FACING_BACK;
+        try {
+            releaseObserver();
             caseGroup.clear();
             innerObserver = null;
         } catch (Exception e) {

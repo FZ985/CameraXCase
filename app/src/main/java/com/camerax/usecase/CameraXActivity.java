@@ -8,6 +8,8 @@ import android.widget.ImageView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.camerax.usecase.usecase.LensFacingCase;
+
 import camerax.usecase.CameraXView;
 import camerax.usecase.UseCase;
 import usecase.impl.CaptureCase;
@@ -31,7 +33,11 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
         CameraXView camera = findViewById(R.id.camera);
         int type = getIntent().getIntExtra("type", 0);
         UseCase[] group = null;
-        if (type == 1) {
+        if (type == 0) {
+            group = new UseCase[]{
+                    new LensFacingCase()
+            };
+        } else if (type == 1) {
             group = new UseCase[]{
                     new FocusCase(),
                     new LayerCase(),
