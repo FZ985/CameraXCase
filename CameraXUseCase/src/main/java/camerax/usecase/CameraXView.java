@@ -36,7 +36,6 @@ import java.util.List;
  * description :相机控件
  */
 public class CameraXView extends RelativeLayout {
-    private final String tag = "CameraView";
 
     private PreviewView cameraView;//相机预览容器
     private ProcessCameraProvider cameraProvider;
