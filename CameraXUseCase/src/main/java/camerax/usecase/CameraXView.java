@@ -232,7 +232,7 @@ public class CameraXView extends RelativeLayout {
                 uc.unregisterCaseObserver(innerObserver);
             }
         } catch (Exception e) {
-            Log.e("CameraXView", "销毁 catch:" + e.getMessage());
+            Log.e("CameraXView", "releaseObserver catch:" + e.getMessage());
         }
     }
 
