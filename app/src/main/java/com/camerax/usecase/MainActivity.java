@@ -1,15 +1,21 @@
 package com.camerax.usecase;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 public class MainActivity extends AppCompatActivity {
+
+    public static Bitmap bitmap = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +42,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void start(Class<?> cls, int type) {
-        startActivity(new Intent(this, cls).putExtra("type", type));
+        startActivityForResult(new Intent(this, cls).putExtra("type", type), 100);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100
+                && resultCode == Activity.RESULT_OK) {
+            if (bitmap != null) {
+                ImageView iv = findViewById(R.id.image);
+                iv.setImageBitmap(bitmap);
+            }
+        }
     }
 
     private boolean hasPermission() {

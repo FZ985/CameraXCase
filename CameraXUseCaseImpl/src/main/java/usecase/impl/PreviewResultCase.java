@@ -190,7 +190,7 @@ public class PreviewResultCase extends LayerCase {
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                     shake();
                     if (listener != null) {
-                        listener.onConfirm(originalBitmap, cropBitmap, layerRectF, getWidth(), getHeight());
+                        listener.onConfirm(Bitmap.createBitmap(originalBitmap), Bitmap.createBitmap(cropBitmap), layerRectF, getWidth(), getHeight());
                     }
                     reset();
                 }

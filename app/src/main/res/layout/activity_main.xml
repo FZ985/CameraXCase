@@ -36,6 +36,13 @@
             android:text="身份证反面"
             android:textAllCaps="false" />
 
+
+        <ImageView
+            android:id="@+id/image"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp" />
+
     </LinearLayout>
 
 </androidx.core.widget.NestedScrollView>

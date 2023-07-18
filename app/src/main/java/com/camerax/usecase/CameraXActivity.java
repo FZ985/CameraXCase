@@ -1,9 +1,10 @@
 package com.camerax.usecase;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Bundle;
-import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -59,7 +60,10 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
 
     @Override
     public void onConfirm(Bitmap originalBitmap, Bitmap cropBitmap, RectF rect, int width, int height) {
-        ImageView image = findViewById(R.id.image);
-        image.setImageBitmap(cropBitmap);
+//        ImageView image = findViewById(R.id.image);
+//        image.setImageBitmap(cropBitmap);
+        MainActivity.bitmap = cropBitmap;
+        setResult(Activity.RESULT_OK, new Intent());
+        finish();
     }
 }
