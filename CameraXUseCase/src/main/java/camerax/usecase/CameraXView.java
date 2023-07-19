@@ -94,13 +94,6 @@ public class CameraXView extends RelativeLayout {
         View view = View.inflate(getContext(), R.layout.camerax_view, this);
         cameraView = view.findViewById(R.id.camera_);
         caseContainer = view.findViewById(R.id.case_container);
-        UseCase useCase = new UseCase() {
-            @Override
-            public int getCaseId() {
-                return 1;
-            }
-        };
-        useCase.postData(1);
     }
 
     private void takePicture() {
