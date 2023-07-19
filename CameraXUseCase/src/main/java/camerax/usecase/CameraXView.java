@@ -236,6 +236,14 @@ public class CameraXView extends RelativeLayout {
         }
     }
 
+    public int getFlashMode() {
+        return mFlashMode;
+    }
+
+    public int getLensFacing() {
+        return mLensFacing;
+    }
+
     @Override
     protected void onDetachedFromWindow() {
         mFlashMode = ImageCapture.FLASH_MODE_OFF;
