@@ -3,7 +3,6 @@ package camerax.usecase;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.AttributeSet;
@@ -108,12 +107,9 @@ public class CameraXView extends RelativeLayout {
                     byte[] bytes = new byte[buffer.remaining()];
                     buffer.get(bytes);
                     Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    Matrix matrix = new Matrix();
-                    matrix.postRotate(90);
-                    Bitmap bm = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
                     handler.post(() -> {
                         for (UseCase uc : caseGroup) {
-                            uc.postData(bm);
+                            uc.postData(bitmap);
                         }
                     });
                     proxy.close();

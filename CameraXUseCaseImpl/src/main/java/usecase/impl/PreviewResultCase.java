@@ -74,7 +74,10 @@ public class PreviewResultCase extends LayerCase {
             if (data == null) return;
             if (data instanceof Bitmap) {
                 bitmap = (Bitmap) data;
-                originalBitmap = centerCrop(bitmap, getWidth(), getHeight());
+                Matrix matrix = new Matrix();
+                matrix.postRotate(90);
+                Bitmap bm = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+                originalBitmap = centerCrop(bm, getWidth(), getHeight());
                 invalidate();
             }
         }
