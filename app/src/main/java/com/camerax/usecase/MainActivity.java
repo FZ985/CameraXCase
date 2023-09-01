@@ -38,6 +38,9 @@ public class MainActivity extends AppCompatActivity {
             case R.id.backCamera:
                 start(CameraXActivity.class, 2);
                 break;
+            case R.id.analysis:
+                start(CameraXActivity.class, 3);
+                break;
         }
     }
 

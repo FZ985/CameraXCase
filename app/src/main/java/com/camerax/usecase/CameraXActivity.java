@@ -9,6 +9,7 @@ import android.os.Bundle;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.camerax.usecase.usecase.ImageAnalysisCase;
 import com.camerax.usecase.usecase.LensFacingCase;
 
 import camerax.usecase.CameraXView;
@@ -54,7 +55,10 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
                     new CaptureCase(),
                     new PreviewResultCase(this)
             };
+        } else if (type == 3) {
+            group = new UseCase[]{new ImageAnalysisCase()};
         }
+
         camera.preview(this, group);
     }
 

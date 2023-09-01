@@ -238,6 +238,11 @@ public abstract class UseCase {
      */
     public abstract int getCaseId();
 
+    //谷歌的usecase
+    public androidx.camera.core.UseCase getCameraUseCase() {
+        return null;
+    }
+
     public static class CaseDataObserver {
         public void onChanged(Object data) {
             // Do nothing

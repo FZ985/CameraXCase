@@ -36,6 +36,14 @@
             android:text="身份证反面"
             android:textAllCaps="false" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/analysis"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="openCamera"
+            android:text="图像分析"
+            android:textAllCaps="false" />
+
 
         <ImageView
             android:id="@+id/image"

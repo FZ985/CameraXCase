@@ -46,6 +46,8 @@ public class CameraXView extends RelativeLayout {
 
     private final List<UseCase> caseGroup = new ArrayList<>();
 
+    private final List<androidx.camera.core.UseCase> cameraUseCase = new ArrayList<>();
+
     LifecycleOwner lifecycleOwner;
     Camera camera;
 
@@ -163,12 +165,23 @@ public class CameraXView extends RelativeLayout {
                     .setTargetRotation(rotation)
                     .build();
 
+            List<androidx.camera.core.UseCase> cases = new ArrayList<>();
+            cases.add(preview);
+            cases.add(imageCapture);
+            if (cameraUseCase.size() > 0) {
+                cases.addAll(cameraUseCase);
+            }
+            androidx.camera.core.UseCase[] caseArr = new androidx.camera.core.UseCase[cases.size()];
+            for (int i = 0; i < cases.size(); i++) {
+                caseArr[i] = cases.get(i);
+            }
+
             // Must unbind the use-cases before rebinding them
             provider.unbindAll();
 
             // A variable number of use-cases can be passed here -
             // camera provides access to CameraControl & CameraInfo
-            camera = provider.bindToLifecycle(lifecycleOwner, cameraSelector, preview, imageCapture);
+            camera = provider.bindToLifecycle(lifecycleOwner, cameraSelector, caseArr);
             // Attach the viewfinder's surface provider to preview use case
             preview.setSurfaceProvider(cameraView.getSurfaceProvider());
             if (runnable != null) {
@@ -184,7 +197,15 @@ public class CameraXView extends RelativeLayout {
             if (useCases != null) {
                 caseGroup.clear();
                 caseGroup.addAll(Arrays.asList(useCases));
+
+                cameraUseCase.clear();
+                for (UseCase u : useCases) {
+                    if (u.getCameraUseCase() != null) {
+                        cameraUseCase.add(u.getCameraUseCase());
+                    }
+                }
             }
+
             cameraProvider = ProcessCameraProvider.getInstance(getContext()).get();
             initCamera(() -> {
                 int width = getWidth();
