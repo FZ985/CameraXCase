@@ -10,6 +10,7 @@ import android.view.View;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.camera.core.Camera;
 import androidx.camera.view.PreviewView;
 
@@ -224,6 +225,7 @@ public abstract class UseCase {
      * @param caseId 创建的case id
      * @return UserCase
      */
+    @Nullable
     protected final UseCase getCase(int caseId) {
         for (UseCase useCase : groupCase) {
             if (useCase.getCaseId() == caseId) {
@@ -239,6 +241,7 @@ public abstract class UseCase {
     public abstract int getCaseId();
 
     //谷歌的usecase
+    @Nullable
     public androidx.camera.core.UseCase getCameraUseCase() {
         return null;
     }

@@ -191,16 +191,16 @@ public class CameraXView extends RelativeLayout {
     }
 
 
-    public void preview(@NonNull LifecycleOwner lifecycleOwner, UseCase... useCases) {
+    public void preview(@NonNull LifecycleOwner lifecycleOwner, @Nullable UseCase... useCases) {
         try {
             this.lifecycleOwner = lifecycleOwner;
-            if (useCases != null) {
+            if (useCases != null && useCases.length > 0) {
                 caseGroup.clear();
                 caseGroup.addAll(Arrays.asList(useCases));
 
                 cameraUseCase.clear();
                 for (UseCase u : useCases) {
-                    if (u.getCameraUseCase() != null) {
+                    if (u != null && u.getCameraUseCase() != null) {
                         cameraUseCase.add(u.getCameraUseCase());
                     }
                 }
@@ -213,16 +213,18 @@ public class CameraXView extends RelativeLayout {
                 //添加CaseView
                 caseContainer.removeAllViews();
                 for (UseCase uc : caseGroup) {
-                    RelativeLayout.LayoutParams params = new LayoutParams(width, height);
-                    CaseView caseView = new CaseView(getContext(), uc);
-                    caseView.setLayoutParams(params);
-                    uc.onCreate(getContext(), this, cameraView, caseView, camera, width, height, caseGroup);
-                    uc.registerCaseObserver(innerObserver);
-                    caseContainer.addView(caseView, params);
+                    if (uc != null) {
+                        RelativeLayout.LayoutParams params = new LayoutParams(width, height);
+                        CaseView caseView = new CaseView(getContext(), uc);
+                        caseView.setLayoutParams(params);
+                        uc.onCreate(getContext(), this, cameraView, caseView, camera, width, height, caseGroup);
+                        uc.registerCaseObserver(innerObserver);
+                        caseContainer.addView(caseView, params);
+                    }
                 }
             });
         } catch (Exception e) {
-            Log.e("CameraXView", "预览失败");
+            Log.e("CameraXView", "预览失败:" + e.getMessage());
         }
     }
 
