@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Bundle;
+import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -33,6 +34,8 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_camera);
         CameraXView camera = findViewById(R.id.camera);
+        ImageView image = findViewById(R.id.image);
+
         int type = getIntent().getIntExtra("type", 0);
         UseCase[] group = null;
         if (type == 0) {
@@ -59,13 +62,16 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
             group = new UseCase[]{new ImageAnalysisCase()};
         }
 
-        camera.preview(this, group);
+        camera.preview(this, () -> {
+        }, group);
     }
 
     @Override
     public void onConfirm(Bitmap originalBitmap, Bitmap cropBitmap, RectF rect, int width, int height) {
 //        ImageView image = findViewById(R.id.image);
 //        image.setImageBitmap(cropBitmap);
+
+//        MainActivity.bitmap = originalBitmap;
         MainActivity.bitmap = cropBitmap;
         setResult(Activity.RESULT_OK, new Intent());
         finish();

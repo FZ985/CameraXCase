@@ -1,10 +1,7 @@
 package camerax.usecase;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -12,19 +9,19 @@ import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.camera.core.AspectRatio;
 import androidx.camera.core.Camera;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
-import androidx.camera.core.ImageCaptureException;
-import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
+import androidx.camera.core.resolutionselector.AspectRatioStrategy;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
 
-import java.nio.ByteBuffer;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,11 +35,8 @@ public class CameraXView extends RelativeLayout {
 
     private PreviewView cameraView;//相机预览容器
     private ProcessCameraProvider cameraProvider;
-    private ImageCapture imageCapture;
 
     private RelativeLayout caseContainer;//CaseView的容器
-
-    private final Handler handler = new Handler(Looper.getMainLooper());
 
     private final List<UseCase> caseGroup = new ArrayList<>();
 
@@ -50,30 +44,14 @@ public class CameraXView extends RelativeLayout {
 
     LifecycleOwner lifecycleOwner;
     Camera camera;
-
     int mFlashMode = ImageCapture.FLASH_MODE_OFF;
-    int mLensFacing = CameraSelector.LENS_FACING_BACK;
+
+    private CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
 
     private UseCase.CaseDataObserver innerObserver = new UseCase.CaseDataObserver() {
         @Override
-        public void onChanged(Object data) {
-            if (data == null) return;
-            if (data instanceof Integer) {
-                int event = (int) data;
-                if (event == EventCode.EVENT_TAKE_PICTURE) {
-                    takePicture();
-                } else if (event == EventCode.EVENT_SWITCH_BACK) {
-                    switchLensFacing(CameraSelector.LENS_FACING_BACK, mFlashMode);
-                } else if (event == EventCode.EVENT_SWITCH_FRONT) {
-                    switchLensFacing(CameraSelector.LENS_FACING_FRONT, mFlashMode);
-                } else if (event == EventCode.EVENT_FLASH_MODE_AUTO) {
-                    switchLensFacing(mLensFacing, ImageCapture.FLASH_MODE_AUTO);
-                } else if (event == EventCode.EVENT_FLASH_MODE_ON) {
-                    switchLensFacing(mLensFacing, ImageCapture.FLASH_MODE_ON);
-                } else if (event == EventCode.EVENT_FLASH_MODE_OFF) {
-                    switchLensFacing(mLensFacing, ImageCapture.FLASH_MODE_OFF);
-                }
-            }
+        public void onChanged(int action, @NonNull Object data) {
+
         }
     };
 
@@ -97,78 +75,33 @@ public class CameraXView extends RelativeLayout {
         caseContainer = view.findViewById(R.id.case_container);
     }
 
-    private void takePicture() {
-        Log.e("CameraXView", "开始拍照===");
-        if (imageCapture != null) {
-            imageCapture.takePicture(ContextCompat.getMainExecutor(getContext()), new ImageCapture.OnImageCapturedCallback() {
-                @androidx.camera.core.ExperimentalGetImage
-                @Override
-                public void onCaptureSuccess(@NonNull ImageProxy proxy) {
-//                    Image image = proxy.getImage();
-                    ByteBuffer buffer = proxy.getPlanes()[0].getBuffer();
-                    byte[] bytes = new byte[buffer.remaining()];
-                    buffer.get(bytes);
-                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    handler.post(() -> {
-                        for (UseCase uc : caseGroup) {
-                            uc.postData(bitmap);
-                        }
-                    });
-                    proxy.close();
-                }
-
-                @Override
-                public void onError(@NonNull ImageCaptureException exception) {
-                    handler.post(() -> {
-                        for (UseCase uc : caseGroup) {
-                            uc.postData(EventCode.EVENT_TAKE_PICTURE_ERROR);
-                        }
-                        Log.e("CameraXView", "拍照失败：" + exception.getMessage());
-                    });
-                }
-            });
-        }
-    }
-
-    private void switchLensFacing(int lensFacing, int flashMode) {
-        this.mLensFacing = lensFacing;
-        this.mFlashMode = flashMode;
-        initCamera(null);
-    }
-
     private void initCamera(Runnable runnable) {
         post(() -> {
+
             int width = getWidth();
             int height = getHeight();
-            int screenAspectRatio = aspectRatio(width, height);
+
+            AspectRatioStrategy screenAspectRatio = CameraUtil.aspectRatioStrategy(width, height);
+
             int rotation = cameraView.getDisplay().getRotation();
+
             // CameraProvider
             ProcessCameraProvider provider = cameraProvider;
 
             // CameraSelector
-            CameraSelector cameraSelector = new CameraSelector.Builder()
-                    .requireLensFacing(mLensFacing)
-                    .build();
+            CameraSelector cameraSelector = this.cameraSelector;
 
             // Preview
             Preview preview = new Preview.Builder()
-                    .setTargetAspectRatio(screenAspectRatio)
-                    .setTargetRotation(rotation)
-                    .build();
-
-            // ImageCapture
-            imageCapture = new ImageCapture.Builder()
-                    .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-                    .setFlashMode(mFlashMode)
-                    .setJpegQuality(100)
-                    .setTargetAspectRatio(screenAspectRatio)
+                    .setResolutionSelector(new ResolutionSelector.Builder()
+                            .setAspectRatioStrategy(screenAspectRatio)
+                            .build())
                     .setTargetRotation(rotation)
                     .build();
 
             List<androidx.camera.core.UseCase> cases = new ArrayList<>();
             cases.add(preview);
-            cases.add(imageCapture);
-            if (cameraUseCase.size() > 0) {
+            if (!cameraUseCase.isEmpty()) {
                 cases.addAll(cameraUseCase);
             }
             androidx.camera.core.UseCase[] caseArr = new androidx.camera.core.UseCase[cases.size()];
@@ -190,52 +123,70 @@ public class CameraXView extends RelativeLayout {
         });
     }
 
+    public final void preview(@NonNull LifecycleOwner lifecycleOwner, @NonNull Runnable initSuccessRun, @Nullable UseCase... useCases) {
+        post(() -> {
+            try {
+                this.lifecycleOwner = lifecycleOwner;
+                if (useCases != null && useCases.length > 0) {
+                    caseGroup.clear();
+                    caseGroup.addAll(Arrays.asList(useCases));
 
-    public void preview(@NonNull LifecycleOwner lifecycleOwner, @Nullable UseCase... useCases) {
-        try {
-            this.lifecycleOwner = lifecycleOwner;
-            if (useCases != null && useCases.length > 0) {
-                caseGroup.clear();
-                caseGroup.addAll(Arrays.asList(useCases));
-
-                cameraUseCase.clear();
-                for (UseCase u : useCases) {
-                    if (u != null && u.getCameraUseCase() != null) {
-                        cameraUseCase.add(u.getCameraUseCase());
+                    for (UseCase uc : caseGroup) {
+                        if (uc != null) {
+                            uc.onAttach(getContext(), this);
+                        }
                     }
+                    updateCase();
                 }
+
+                ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
+                future.addListener(() -> {
+                    try {
+//                    cameraProvider = ProcessCameraProvider.getInstance(getContext()).get();
+                        cameraProvider = future.get();
+                        initCamera(() -> {
+                            int width = getWidth();
+                            int height = getHeight();
+                            //添加CaseView
+                            caseContainer.removeAllViews();
+                            for (UseCase uc : caseGroup) {
+                                if (uc != null) {
+                                    RelativeLayout.LayoutParams params = new LayoutParams(width, height);
+                                    CaseView caseView = new CaseView(getContext(), uc);
+                                    caseView.setLayoutParams(params);
+                                    uc.onCreate(getContext(), this, cameraView, caseView, camera, width, height, caseGroup);
+                                    uc.registerCaseObserver(innerObserver);
+                                    caseContainer.addView(caseView, params);
+                                }
+                            }
+
+                            for (UseCase uc : caseGroup) {
+                                if (uc != null) {
+                                    uc.onAllCaseCreated();
+                                }
+                            }
+                            initSuccessRun.run();
+                        });
+                    } catch (Exception e) {
+                        Log.e("CameraXView", "预览失败e:" + e.getMessage());
+                    }
+                }, ContextCompat.getMainExecutor(getContext()));
+            } catch (Exception e) {
+                Log.e("CameraXView", "预览失败:" + e.getMessage());
             }
-
-            cameraProvider = ProcessCameraProvider.getInstance(getContext()).get();
-            initCamera(() -> {
-                int width = getWidth();
-                int height = getHeight();
-                //添加CaseView
-                caseContainer.removeAllViews();
-                for (UseCase uc : caseGroup) {
-                    if (uc != null) {
-                        RelativeLayout.LayoutParams params = new LayoutParams(width, height);
-                        CaseView caseView = new CaseView(getContext(), uc);
-                        caseView.setLayoutParams(params);
-                        uc.onCreate(getContext(), this, cameraView, caseView, camera, width, height, caseGroup);
-                        uc.registerCaseObserver(innerObserver);
-                        caseContainer.addView(caseView, params);
-                    }
-                }
-            });
-        } catch (Exception e) {
-            Log.e("CameraXView", "预览失败:" + e.getMessage());
-        }
+        });
     }
 
-    private int aspectRatio(int width, int height) {
-        int previewRatio = Math.max(width, height) / Math.min(width, height);
-        double RATIO_4_3_VALUE = 4.0 / 3.0;
-        double RATIO_16_9_VALUE = 16.0 / 9.0;
-        if (Math.abs(previewRatio - RATIO_4_3_VALUE) <= Math.abs(previewRatio - RATIO_16_9_VALUE)) {
-            return AspectRatio.RATIO_4_3;
+    private void updateCase() {
+        cameraUseCase.clear();
+        for (UseCase u : caseGroup) {
+            if (u != null) {
+                List<androidx.camera.core.UseCase> list = u.getCameraUseCase();
+                if (list != null && !list.isEmpty()) {
+                    cameraUseCase.addAll(list);
+                }
+            }
         }
-        return AspectRatio.RATIO_16_9;
     }
 
     private void releaseObserver() {
@@ -248,18 +199,9 @@ public class CameraXView extends RelativeLayout {
         }
     }
 
-    public int getFlashMode() {
-        return mFlashMode;
-    }
-
-    public int getLensFacing() {
-        return mLensFacing;
-    }
-
     @Override
     protected void onDetachedFromWindow() {
         mFlashMode = ImageCapture.FLASH_MODE_OFF;
-        mLensFacing = CameraSelector.LENS_FACING_BACK;
         try {
             releaseObserver();
             caseGroup.clear();
@@ -269,4 +211,47 @@ public class CameraXView extends RelativeLayout {
         }
         super.onDetachedFromWindow();
     }
+
+    public final void notifyCamera() {
+        notifyCamera(null);
+    }
+
+    public final void notifyCamera(@Nullable Runnable runnable) {
+        //初始化一次才能重新刷新一下
+        if (camera != null) {
+            for (UseCase uc : caseGroup) {
+                if (uc != null) {
+                    uc.onCameraNotify(this);
+                }
+            }
+            updateCase();
+            initCamera(runnable);
+        }
+    }
+
+    public final int getFlashMode() {
+        return mFlashMode;
+    }
+
+    @SuppressLint("RestrictedApi")
+    public final int getLensFacing() {
+        Integer lensFacing = cameraSelector.getLensFacing();
+        if (lensFacing != null) {
+            return lensFacing;
+        }
+        return CameraSelector.LENS_FACING_BACK;
+    }
+
+    public final void setFlashMode(int mFlashMode) {
+        this.mFlashMode = mFlashMode;
+    }
+
+    public final CameraSelector getCameraSelector() {
+        return cameraSelector;
+    }
+
+    public final void setCameraSelector(@NonNull CameraSelector cameraSelector) {
+        this.cameraSelector = cameraSelector;
+    }
+
 }

@@ -15,7 +15,7 @@ import androidx.camera.core.MeteringPoint;
 /**
  * author : JFZ
  * date : 2023/7/17 14:33
- * description : 聚焦case
+ * description : 聚焦
  */
 public class FocusCase extends BaseUseCase {
 

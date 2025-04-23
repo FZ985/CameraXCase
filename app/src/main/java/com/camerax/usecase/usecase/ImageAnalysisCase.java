@@ -3,8 +3,11 @@ package com.camerax.usecase.usecase;
 import android.util.Size;
 import android.view.Surface;
 
+import androidx.annotation.Nullable;
 import androidx.camera.core.ImageAnalysis;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Executors;
 
 import camerax.usecase.UseCase;
@@ -30,9 +33,10 @@ public class ImageAnalysisCase extends UseCase {
         });
     }
 
+    @Nullable
     @Override
-    public androidx.camera.core.UseCase getCameraUseCase() {
-        return imageAnalysis;
+    public List<androidx.camera.core.UseCase> getCameraUseCase() {
+        return Collections.singletonList(imageAnalysis);
     }
 
     @Override

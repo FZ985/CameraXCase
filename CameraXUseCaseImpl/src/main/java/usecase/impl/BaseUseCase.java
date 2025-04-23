@@ -2,6 +2,8 @@ package usecase.impl;
 
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
 
 import camerax.usecase.UseCase;
 
@@ -11,6 +13,9 @@ import camerax.usecase.UseCase;
  * description :
  */
 public abstract class BaseUseCase extends UseCase {
+
+
+    protected final Handler handler = new Handler(Looper.getMainLooper());
 
     public int getPrimaryColor() {
         // 获取colorPrimary属性值
@@ -24,4 +29,5 @@ public abstract class BaseUseCase extends UseCase {
         final float scale = getContext().getResources().getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
     }
+
 }

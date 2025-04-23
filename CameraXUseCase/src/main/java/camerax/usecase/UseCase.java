@@ -49,6 +49,19 @@ public abstract class UseCase {
     private final UseCase.UseCaseObservable mObservable = new UseCaseObservable();
 
     /**
+     * case 创建之前
+     *
+     * @param context    上下文
+     * @param cameraView 自定义的组件
+     */
+    public void onAttach(@NonNull Context context, @NonNull CameraXView cameraView) {
+        this.context = context.getApplicationContext();
+        this.resources = context.getResources();
+        this.theme = context.getTheme();
+        this.cameraView = cameraView;
+    }
+
+    /**
      * case 的创建
      *
      * @param context     上下文
@@ -60,8 +73,8 @@ public abstract class UseCase {
      * @param height      当前case高度
      * @param cases       其他绑定的case
      */
-    protected final void onCreate(Context context,
-                                  CameraXView cameraView, PreviewView previewView, CaseView caseView, Camera camera,
+    protected final void onCreate(@NonNull Context context,
+                                  @NonNull CameraXView cameraView, PreviewView previewView, CaseView caseView, Camera camera,
                                   int width, int height, List<UseCase> cases) {
         this.context = context.getApplicationContext();
         this.resources = context.getResources();
@@ -84,9 +97,23 @@ public abstract class UseCase {
     }
 
     /**
+     * 所有case 创建完成
+     */
+    public void onAllCaseCreated() {
+
+    }
+
+    /**
      * case初始化并且创建完成
      */
     public void onCaseCreated() {
+    }
+
+    /**
+     * 相机改变
+     */
+    public void onCameraNotify(CameraXView cameraView) {
+
     }
 
     /**
@@ -112,8 +139,12 @@ public abstract class UseCase {
      *
      * @param data 数据
      */
-    protected final void postData(Object data) {
-        mObservable.onChanged(data);
+    public final void postData(int action, @NonNull Object data) {
+        mObservable.onChanged(action, data);
+    }
+
+    public final void postData(int action) {
+        mObservable.onChanged(action, "");
     }
 
     protected final Context getContext() {
@@ -210,9 +241,9 @@ public abstract class UseCase {
             return !mObservers.isEmpty();
         }
 
-        public void onChanged(Object data) {
+        public void onChanged(int action, @NonNull Object data) {
             for (int i = mObservers.size() - 1; i >= 0; i--) {
-                mObservers.get(i).onChanged(data);
+                mObservers.get(i).onChanged(action, data);
             }
         }
     }
@@ -236,18 +267,25 @@ public abstract class UseCase {
     }
 
     /**
+     * @return 已添加的case
+     */
+    public final List<UseCase> getOtherGroupCase() {
+        return groupCase;
+    }
+
+    /**
      * @return 每一个case 都需要一个唯一的id
      */
     public abstract int getCaseId();
 
     //谷歌的usecase
     @Nullable
-    public androidx.camera.core.UseCase getCameraUseCase() {
+    public List<androidx.camera.core.UseCase> getCameraUseCase() {
         return null;
     }
 
     public static class CaseDataObserver {
-        public void onChanged(Object data) {
+        public void onChanged(int action, @NonNull Object data) {
             // Do nothing
         }
     }

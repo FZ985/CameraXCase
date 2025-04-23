@@ -6,7 +6,6 @@ import android.annotation.SuppressLint;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
@@ -16,15 +15,20 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
+import androidx.annotation.NonNull;
+
+import camerax.usecase.CameraUtil;
 import camerax.usecase.UseCase;
 
 
 /**
  * author : JFZ
  * date : 2023/7/5 14:13
- * description : 拍照结果预览case
+ * description : 拍照结果预览
  */
 public class PreviewResultCase extends LayerCase {
+
+    public static final int ID = "PreviewResultCase".hashCode();
 
     public interface PreviewConfirmListener {
         void onConfirm(Bitmap originalBitmap, Bitmap cropBitmap, RectF rect, int width, int height);
@@ -70,14 +74,11 @@ public class PreviewResultCase extends LayerCase {
 
     private UseCase.CaseDataObserver mObserver = new UseCase.CaseDataObserver() {
         @Override
-        public void onChanged(Object data) {
-            if (data == null) return;
-            if (data instanceof Bitmap) {
+        public void onChanged(int action, @NonNull Object data) {
+            if (action == CaptureCase.EVENT_TAKE_PICTURE && data instanceof Bitmap) {
                 bitmap = (Bitmap) data;
-                Matrix matrix = new Matrix();
-                matrix.postRotate(90);
-                Bitmap bm = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
-                originalBitmap = centerCrop(bm, getWidth(), getHeight());
+                Bitmap bm = CameraUtil.rotateBitmap(bitmap, 90);
+                originalBitmap = CameraUtil.centerCrop(bm, getWidth(), getHeight());
                 invalidate();
             }
         }
@@ -123,7 +124,7 @@ public class PreviewResultCase extends LayerCase {
             canvas.drawColor(0, PorterDuff.Mode.CLEAR);
             canvas.drawColor(Color.BLACK);
 //            canvas.drawBitmap(originalBitmap, null, new RectF(0, 0, getCaseWidth(), getCaseHeight()), paint);
-            cropBitmap = rangBitmap(originalBitmap, (int) layerRectF.left, (int) layerRectF.top, (int) layerRectF.width(), (int) layerRectF.height());
+            cropBitmap = CameraUtil.rangBitmap(originalBitmap, (int) layerRectF.left, (int) layerRectF.top, (int) layerRectF.width(), (int) layerRectF.height());
             canvas.drawBitmap(cropBitmap, layerRectF.left, layerRectF.top, paint);
 
             if (!isAnim) {
@@ -233,32 +234,6 @@ public class PreviewResultCase extends LayerCase {
         set.start();
     }
 
-    private Bitmap rangBitmap(Bitmap source, int x, int y, int width, int height) {
-        return Bitmap.createBitmap(source, x, y, width, height);
-    }
-
-    //将bitmap进行等比裁剪
-    private Bitmap centerCrop(Bitmap source, int targetWidth, int targetHeight) {
-        float sourceRatio = (float) source.getWidth() / source.getHeight();
-        float targetRatio = (float) targetWidth / targetHeight;
-        int startX, startY, width, height;
-        if (sourceRatio > targetRatio) {
-            width = (int) (source.getHeight() * targetRatio);
-            height = source.getHeight();
-            startX = (source.getWidth() - width) / 2;
-            startY = 0;
-        } else {
-            width = source.getWidth();
-            height = (int) (source.getWidth() / targetRatio);
-            startX = 0;
-            startY = (source.getHeight() - height) / 2;
-        }
-        Matrix matrix = new Matrix();
-        float scaleX = (float) targetWidth / width;
-        float scaleY = (float) targetHeight / height;
-        matrix.setScale(scaleX, scaleY);
-        return Bitmap.createBitmap(source, startX, startY, width, height, matrix, true);
-    }
 
     private void shake() {
         View view = getCaseView();
@@ -278,6 +253,6 @@ public class PreviewResultCase extends LayerCase {
 
     @Override
     public int getCaseId() {
-        return "PreviewResultCase".hashCode();
+        return ID;
     }
 }

@@ -17,6 +17,7 @@
 
         <activity
             android:name=".MainActivity"
+            android:configChanges="screenSize|orientation|smallestScreenSize"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,6 +28,11 @@
 
         <activity
             android:name=".CameraXActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/CameraXCaseTheme" />
+
+        <activity
+            android:name=".ImageAnalysisCaptureActivity"
             android:screenOrientation="portrait"
             android:theme="@style/CameraXCaseTheme" />
     </application>

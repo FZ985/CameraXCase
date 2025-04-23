@@ -28,19 +28,16 @@ public class MainActivity extends AppCompatActivity {
     public void openCamera(View view) {
         if (!hasPermission()) return;
         int id = view.getId();
-        switch (id) {
-            case R.id.openCamera:
-                start(CameraXActivity.class, 0);
-                break;
-            case R.id.frontCamera:
-                start(CameraXActivity.class, 1);
-                break;
-            case R.id.backCamera:
-                start(CameraXActivity.class, 2);
-                break;
-            case R.id.analysis:
-                start(CameraXActivity.class, 3);
-                break;
+        if (id == R.id.openCamera) {
+            start(CameraXActivity.class, 0);
+        } else if (id == R.id.frontCamera) {
+            start(CameraXActivity.class, 1);
+        } else if (id == R.id.backCamera) {
+            start(CameraXActivity.class, 2);
+        } else if (id == R.id.analysis) {
+            start(CameraXActivity.class, 3);
+        } else if (id == R.id.capture) {
+            startActivityForResult(new Intent(this, ImageAnalysisCaptureActivity.class), 100);
         }
     }
 

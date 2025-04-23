@@ -1,6 +1,8 @@
 package usecase.impl;
 
 import android.animation.ValueAnimator;
+import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -10,16 +12,34 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
-import camerax.usecase.EventCode;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.camera.core.ImageCapture;
+import androidx.camera.core.ImageCaptureException;
+import androidx.camera.core.ImageProxy;
+import androidx.camera.core.UseCase;
+import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.core.content.ContextCompat;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import camerax.usecase.CameraUtil;
+import camerax.usecase.CameraXView;
 
 /**
  * author : JFZ
  * date : 2023/7/17 15:10
- * description : 拍照按钮case
+ * description : 拍照
  */
 public class CaptureCase extends BaseUseCase {
-    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
+    public static final int ID = "CaptureCase".hashCode();
+
+    public static final int EVENT_TAKE_PICTURE = "TakePictureEvent".hashCode();
+    public static final int EVENT_TAKE_PICTURE_ERROR = "TakePictureErrorEvent".hashCode();
+
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private int radius;
     private int outsideRadius;
 
@@ -31,6 +51,24 @@ public class CaptureCase extends BaseUseCase {
 
     private int insideColor = Color.WHITE;
 
+    private ImageCapture imageCapture;
+
+    private boolean isCapturing = false;
+    private final List<CaptureListener> captureListeners = new ArrayList<>();
+
+    @Override
+    public void onAttach(Context context, CameraXView cameraView) {
+        imageCapture = new ImageCapture.Builder()
+                .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                .setFlashMode(cameraView.getFlashMode())
+                .setJpegQuality(100)
+                .setResolutionSelector(new ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(CameraUtil.aspectRatioStrategy(cameraView.getWidth(), cameraView.getHeight()))
+                        .build())
+                .setTargetRotation(cameraView.getDisplay().getRotation())
+                .build();
+    }
+
     @Override
     public void onCaseCreated() {
         outsideRadius = dp2px(45);
@@ -40,6 +78,13 @@ public class CaptureCase extends BaseUseCase {
         paint.setStyle(Paint.Style.FILL);
         insideRadius = radius;
         rectF.set(x - outsideRadius, y - outsideRadius, x + outsideRadius, y + outsideRadius);
+    }
+
+    @Override
+    public void onCameraNotify(CameraXView cameraView) {
+        if (imageCapture != null) {
+            imageCapture.setFlashMode(cameraView.getFlashMode());
+        }
     }
 
     @Override
@@ -84,14 +129,112 @@ public class CaptureCase extends BaseUseCase {
             insideRadius = (int) animation.getAnimatedValue();
             invalidate();
             if (animation.getCurrentPlayTime() >= animation.getDuration()) {
-                postData(EventCode.EVENT_TAKE_PICTURE);
+                takePicture();
             }
         });
         anim.start();
     }
 
+    public void takePicture() {
+        //避免重复点击
+        if (isCapturing) return;
+        log("开始拍照===");
+        if (imageCapture != null) {
+            isCapturing = true;
+            imageCapture.takePicture(ContextCompat.getMainExecutor(getContext()), new ImageCapture.OnImageCapturedCallback() {
+                @androidx.camera.core.ExperimentalGetImage
+                @Override
+                public void onCaptureSuccess(@NonNull ImageProxy proxy) {
+//                    ByteBuffer buffer = proxy.getPlanes()[0].getBuffer();
+//                    byte[] bytes = new byte[buffer.remaining()];
+//                    buffer.get(bytes);
+//                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                    isCapturing = false;
+                    Bitmap bitmap = proxy.toBitmap();
+                    handler.post(() -> {
+                        for (camerax.usecase.UseCase ca : getOtherGroupCase()) {
+                            if (ca != null) {
+                                ca.postData(EVENT_TAKE_PICTURE, bitmap);
+                            }
+                        }
+                        for (CaptureListener listener : captureListeners) {
+                            if (listener != null) {
+                                listener.onCapture(new CaptureResult(bitmap));
+                            }
+                        }
+                    });
+                    proxy.close();
+                }
+
+                @Override
+                public void onError(@NonNull ImageCaptureException exception) {
+                    isCapturing = false;
+                    log("拍照失败：" + exception.getImageCaptureError() + "," + exception.getMessage());
+                    handler.post(() -> {
+                        for (CaptureListener listener : captureListeners) {
+                            if (listener != null) {
+                                listener.onCapture(new CaptureResult(exception));
+                            }
+                        }
+                        for (camerax.usecase.UseCase uc : getOtherGroupCase()) {
+                            if (uc != null) {
+                                uc.postData(EVENT_TAKE_PICTURE_ERROR, exception);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        isCapturing = false;
+        captureListeners.clear();
+        super.onDestroy();
+    }
+
+    @Nullable
+    @Override
+    public List<UseCase> getCameraUseCase() {
+        List<UseCase> list = new ArrayList<>();
+        list.add(imageCapture);
+        return list;
+    }
+
     @Override
     public int getCaseId() {
-        return "CaptureCase".hashCode();
+        return ID;
+    }
+
+    public void setCaptureListener(CaptureListener captureListener) {
+        if (!captureListeners.contains(captureListener)) {
+            captureListeners.add(captureListener);
+        }
+    }
+
+    public interface CaptureListener {
+        void onCapture(CaptureResult result);
+    }
+
+    public static class CaptureResult {
+        private Bitmap bitmap;
+        private ImageCaptureException exception;
+
+        public CaptureResult(ImageCaptureException exception) {
+            this.exception = exception;
+        }
+
+        public CaptureResult(Bitmap bitmap) {
+            this.bitmap = bitmap;
+        }
+
+        public Bitmap getBitmap() {
+            return bitmap;
+        }
+
+        public ImageCaptureException getException() {
+            return exception;
+        }
     }
 }

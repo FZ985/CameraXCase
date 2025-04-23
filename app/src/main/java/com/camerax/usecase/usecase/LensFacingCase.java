@@ -11,10 +11,12 @@ import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 
+import androidx.camera.core.CameraSelector;
+import androidx.camera.core.ImageCapture;
+
 import com.camerax.usecase.R;
 
 import camerax.usecase.CaseView;
-import camerax.usecase.EventCode;
 import usecase.impl.BaseUseCase;
 
 /**
@@ -24,13 +26,11 @@ import usecase.impl.BaseUseCase;
  */
 public class LensFacingCase extends BaseUseCase {
 
-    private boolean isBack = true;
-
-    private boolean isOff = true;
+    public static final int ID = "LensFacingCase".hashCode();
 
     @Override
     public int getCaseId() {
-        return "LensFacingCase".hashCode();
+        return ID;
     }
 
     @SuppressLint("MissingInflatedId")
@@ -58,28 +58,26 @@ public class LensFacingCase extends BaseUseCase {
 
         lensFacingIv.setOnClickListener(v -> {
             shake(v);
-            if (isBack) {
-                isBack = false;
-                postData(EventCode.EVENT_SWITCH_FRONT);
+            if (getCameraView().getLensFacing() == CameraSelector.LENS_FACING_BACK) {
+                getCameraView().setCameraSelector(CameraSelector.DEFAULT_FRONT_CAMERA);
             } else {
-                isBack = true;
-                postData(EventCode.EVENT_SWITCH_BACK);
+                getCameraView().setCameraSelector(CameraSelector.DEFAULT_BACK_CAMERA);
             }
             rotation(lensFacingIv);
+            getCameraView().notifyCamera();
         });
 
         flashModeIv.setOnClickListener(v -> {
             shake(v);
-            if (isOff) {
-                isOff = false;
-                postData(EventCode.EVENT_FLASH_MODE_ON);
+            if (getCameraView().getFlashMode() == ImageCapture.FLASH_MODE_OFF) {
+                getCameraView().setFlashMode(ImageCapture.FLASH_MODE_ON);
                 flashModeIv.setImageResource(R.drawable.flash_on);
             } else {
-                isOff = true;
-                postData(EventCode.EVENT_FLASH_MODE_OFF);
+                getCameraView().setFlashMode(ImageCapture.FLASH_MODE_OFF);
                 flashModeIv.setImageResource(R.drawable.flash_off);
             }
             scale(flashModeIv);
+            getCameraView().notifyCamera();
         });
     }
 
