@@ -19,7 +19,7 @@ import kotlin.math.absoluteValue
 /**
  * by JFZ
  * 2025/4/23
- * desc：
+ * desc：利用ImageAnalysis图像分析来实现拍照功能
  **/
 class ImageAnalysisCaptureCase(private val listener: TakePictureListener?) : BaseUseCase() {
 
