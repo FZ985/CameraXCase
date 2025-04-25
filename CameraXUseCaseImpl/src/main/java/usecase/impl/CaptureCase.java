@@ -149,6 +149,7 @@ public class CaptureCase extends BaseUseCase {
 //                    byte[] bytes = new byte[buffer.remaining()];
 //                    buffer.get(bytes);
 //                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+
                     isCapturing = false;
                     Bitmap bitmap = proxy.toBitmap();
                     handler.post(() -> {

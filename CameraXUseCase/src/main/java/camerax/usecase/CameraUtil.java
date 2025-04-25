@@ -1,11 +1,16 @@
 package camerax.usecase;
 
 
+import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
+import android.util.Log;
+import android.view.Surface;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.camera.core.AspectRatio;
+import androidx.camera.core.Camera;
 import androidx.camera.core.resolutionselector.AspectRatioStrategy;
 
 /**
@@ -90,5 +95,37 @@ public class CameraUtil {
                 matrix,
                 true
         );
+    }
+
+    //计算正确的角度用于bitmap 旋转
+    public static int getFinalRotationDegrees(Context context, Camera camera) {
+        int sensorRotation = camera.getCameraInfo().getSensorRotationDegrees();
+        Log.e("CameraUtil", "sensorRotation:" + sensorRotation);
+
+        // 获取当前设备显示方向
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        int displayRotation = wm.getDefaultDisplay().getRotation();
+        Log.e("CameraUtil", "displayRotation:" + displayRotation);
+
+        int displayRotationDegrees = 0;
+
+        if (displayRotation == Surface.ROTATION_0) {
+            displayRotationDegrees = 0;
+        }
+        if (displayRotation == Surface.ROTATION_90) {
+            displayRotationDegrees = 90;
+        }
+        if (displayRotation == Surface.ROTATION_180) {
+            displayRotationDegrees = 180;
+        }
+        if (displayRotation == Surface.ROTATION_270) {
+            displayRotationDegrees = 270;
+        }
+
+        // 计算总的旋转角度
+        int totalRotation = (sensorRotation - displayRotationDegrees + 360) % 360;
+        Log.e("CameraUtil", "totalRotation:" + totalRotation);
+
+        return totalRotation;
     }
 }
