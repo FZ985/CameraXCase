@@ -26,6 +26,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import camerax.core.CameraCase;
+import camerax.core.CameraCaseView;
+import camerax.core.tools.CameraUtil;
+
+
 /**
  * author : JFZ
  * date : 2023/7/15 17:11
@@ -48,19 +53,21 @@ public class CameraXView extends RelativeLayout {
 
     private CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
 
-    private UseCase.CaseDataObserver innerObserver = new UseCase.CaseDataObserver() {
+    private CameraCase.CaseDataObserver innerObserver = new CameraCase.CaseDataObserver() {
         @Override
         public void onChanged(int action, @NonNull Object data) {
-
+            super.onChanged(action, data);
         }
     };
 
     public CameraXView(@NonNull Context context) {
-        this(context, null);
+        super(context);
+        init();
     }
 
     public CameraXView(@NonNull Context context, @Nullable AttributeSet attrs) {
-        this(context, attrs, 0);
+        super(context, attrs);
+        init();
     }
 
     public CameraXView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
@@ -72,6 +79,7 @@ public class CameraXView extends RelativeLayout {
         setWillNotDraw(false);
         View view = View.inflate(getContext(), R.layout.camerax_view, this);
         cameraView = view.findViewById(R.id.camera_);
+        cameraView.setImplementationMode(PreviewView.ImplementationMode.PERFORMANCE);
         caseContainer = view.findViewById(R.id.case_container);
     }
 
@@ -117,6 +125,7 @@ public class CameraXView extends RelativeLayout {
             camera = provider.bindToLifecycle(lifecycleOwner, cameraSelector, caseArr);
             // Attach the viewfinder's surface provider to preview use case
             preview.setSurfaceProvider(cameraView.getSurfaceProvider());
+
             if (runnable != null) {
                 runnable.run();
             }
@@ -133,7 +142,7 @@ public class CameraXView extends RelativeLayout {
 
                     for (UseCase uc : caseGroup) {
                         if (uc != null) {
-                            uc.onAttach(getContext(), this);
+                            uc.onCaseAttach(getContext(), this, caseGroup);
                         }
                     }
                     updateCase();
@@ -152,9 +161,9 @@ public class CameraXView extends RelativeLayout {
                             for (UseCase uc : caseGroup) {
                                 if (uc != null) {
                                     RelativeLayout.LayoutParams params = new LayoutParams(width, height);
-                                    CaseView caseView = new CaseView(getContext(), uc);
+                                    CameraCaseView<CameraXView> caseView = new CameraCaseView<>(getContext(), uc);
                                     caseView.setLayoutParams(params);
-                                    uc.onCreate(getContext(), this, cameraView, caseView, camera, width, height, caseGroup);
+                                    uc.onCreate(getContext(), this, cameraView, caseView, width, height, camera);
                                     uc.registerCaseObserver(innerObserver);
                                     caseContainer.addView(caseView, params);
                                 }
@@ -248,6 +257,11 @@ public class CameraXView extends RelativeLayout {
 
     public final CameraSelector getCameraSelector() {
         return cameraSelector;
+    }
+
+
+    public LifecycleOwner getLifecycleOwner() {
+        return lifecycleOwner;
     }
 
     public final void setCameraSelector(@NonNull CameraSelector cameraSelector) {

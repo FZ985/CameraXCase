@@ -32,8 +32,8 @@ public class LayerCase extends BaseUseCase {
         //卡片底部偏移
         int offsetY = dp2px(50);
         int dp20 = dp2px(20);
-        int width = getWidth();
-        int height = getHeight();
+        int width = mWidth;
+        int height = mHeight;
 
         layerRadius = (float) dp20 / 2;
 

@@ -1,11 +1,11 @@
 package com.camerax.usecase
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.camerax.usecase.databinding.ActivityImageAnalysisCaptureBinding
 import com.camerax.usecase.usecase.ImageAnalysisCaptureCase
+import usecase.impl.CaptureResult
 
 
 /**
@@ -26,8 +26,8 @@ class ImageAnalysisCaptureActivity : AppCompatActivity(),
         binding.camera.preview(this, {}, ImageAnalysisCaptureCase(this))
     }
 
-    override fun onPicture(bitmap: Bitmap) {
-        MainActivity.bitmap = bitmap
+    override fun onPicture(result: CaptureResult) {
+        MainActivity.bitmap = result.bitmap
         setResult(RESULT_OK, Intent())
         finish()
     }

@@ -38,7 +38,7 @@ public class IdCardFrontCase extends LayerCase {
         frontPaint.setStyle(Paint.Style.STROKE);
         frontPaint.setStrokeWidth(6);
 
-        Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.vector_idcard_badge);
+        Drawable drawable = ContextCompat.getDrawable(mContext, R.drawable.vector_idcard_badge);
 
         frontBmp = Bitmap.createBitmap((int) frontRect.width(), (int) frontRect.height(), Bitmap.Config.ARGB_8888);
         if (frontBmp != null && drawable != null) {

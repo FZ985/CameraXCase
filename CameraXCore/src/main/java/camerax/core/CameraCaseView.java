@@ -1,4 +1,5 @@
-package camerax.usecase;
+package camerax.core;
+
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -6,25 +7,31 @@ import android.graphics.Canvas;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
- * author : JFZ
- * date : 2023/7/15 17:33
- * description : 将 UseCase 绑定到 CaseView中
- */
+ * by JFZ
+ * 2025/4/27
+ * desc：
+ **/
 @SuppressLint("ViewConstructor")
-public final class CaseView extends View {
-    private UseCase useCase;
+public class CameraCaseView<VG extends ViewGroup> extends View {
 
-    public CaseView(Context context, UseCase useCase) {
+    @Nullable
+    private CameraCase<VG> cameraCase;
+
+    public CameraCaseView(Context context, @Nullable CameraCase<VG> cameraCase) {
         super(context);
-        this.useCase = useCase;
+        this.cameraCase = cameraCase;
     }
 
     @Override
-    protected void onDraw(Canvas canvas) {
-        if (useCase != null) {
-            useCase.onDraw(canvas);
+    protected void onDraw(@NonNull Canvas canvas) {
+        if (cameraCase != null) {
+            cameraCase.onDraw(canvas);
         } else {
             super.onDraw(canvas);
         }
@@ -33,8 +40,8 @@ public final class CaseView extends View {
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (useCase != null) {
-            return useCase.onTouchEvent(event);
+        if (cameraCase != null) {
+            return cameraCase.onTouchEvent(event);
         }
         return super.onTouchEvent(event);
     }
@@ -42,10 +49,10 @@ public final class CaseView extends View {
     @Override
     protected void onDetachedFromWindow() {
         try {
-            if (useCase != null) {
-                useCase.onDestroy();
+            if (cameraCase != null) {
+                cameraCase.onDestroy();
             }
-            useCase = null;
+            cameraCase = null;
         } catch (Exception e) {
             Log.e("CaseView", "onDetachedFromWindow:" + e.getMessage());
         }

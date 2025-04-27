@@ -1,4 +1,4 @@
-package camerax.usecase;
+package camerax.core.tools;
 
 
 import android.content.Context;

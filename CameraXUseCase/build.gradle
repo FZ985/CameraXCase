@@ -7,7 +7,7 @@ android {
     compileSdk 34
 
     defaultConfig {
-        minSdk 23
+        minSdk 24
         targetSdk 34
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -27,11 +27,5 @@ android {
 }
 
 dependencies {
-    implementation 'androidx.appcompat:appcompat:1.6.1'
-//    def camerax_version = "1.2.3"
-    def camerax_version = "1.4.2"
-    api "androidx.camera:camera-core:${camerax_version}"
-    api "androidx.camera:camera-camera2:${camerax_version}"
-    api "androidx.camera:camera-lifecycle:${camerax_version}"
-    api "androidx.camera:camera-view:${camerax_version}"
+    api project(path: ":CameraXCore")
 }

@@ -1,5 +1,6 @@
 package com.camerax.usecase;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -38,6 +39,9 @@ public class MainActivity extends AppCompatActivity {
             start(CameraXActivity.class, 3);
         } else if (id == R.id.capture) {
             startActivityForResult(new Intent(this, ImageAnalysisCaptureActivity.class), 100);
+        } else if (id == R.id.controller_capture) {
+            if (!hasAudioPermission()) return;
+            startActivityForResult(new Intent(this, ControllerCaptureActivity.class), 100);
         }
     }
 
@@ -61,6 +65,16 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[]{android.Manifest.permission.CAMERA,
+            }, 100);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean hasAudioPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO,
             }, 100);
             return false;
         }

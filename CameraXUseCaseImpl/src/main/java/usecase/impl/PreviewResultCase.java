@@ -10,14 +10,12 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PorterDuff;
 import android.graphics.RectF;
-import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.animation.LinearInterpolator;
 
 import androidx.annotation.NonNull;
 
-import camerax.usecase.CameraUtil;
+import camerax.core.tools.CameraUtil;
 import camerax.usecase.UseCase;
 
 
@@ -75,11 +73,12 @@ public class PreviewResultCase extends LayerCase {
     private UseCase.CaseDataObserver mObserver = new UseCase.CaseDataObserver() {
         @Override
         public void onChanged(int action, @NonNull Object data) {
-            if (action == CaptureCase.EVENT_TAKE_PICTURE && data instanceof Bitmap) {
-                bitmap = (Bitmap) data;
-                Bitmap bm = CameraUtil.rotateBitmap(bitmap, 90);
-                originalBitmap = CameraUtil.centerCrop(bm, getWidth(), getHeight());
-                invalidate();
+            if (action == CaptureCase.EVENT_TAKE_PICTURE && data instanceof CaptureResult) {
+                CaptureResult result = (CaptureResult) data;
+                bitmap = result.getBitmap();
+                Bitmap bm = CameraUtil.rotateBitmap(bitmap, result.getRotationDegrees());
+                originalBitmap = CameraUtil.centerCrop(bm, mWidth, mHeight);
+                invalidateCase();
             }
         }
     };
@@ -100,10 +99,10 @@ public class PreviewResultCase extends LayerCase {
         btnRadius = dp2px(35);
         btnSize = (int) btnRadius * 2;
 
-        leftX = (float) getWidth() / 4;
-        rightX = (float) getWidth() * 3 / 4;
+        leftX = (float) mWidth / 4;
+        rightX = (float) mWidth * 3 / 4;
         strokeWidth = btnRadius * 2 / 50f;
-        btnY = getHeight() - dp2px(85);
+        btnY = mHeight - dp2px(85);
 
         cancelIndex = btnRadius * 2 / 10f;
         cancelRect = new RectF(btnCancelX, btnY - cancelIndex, btnCancelX + cancelIndex * 2, btnY + cancelIndex);
@@ -194,7 +193,7 @@ public class PreviewResultCase extends LayerCase {
                 if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                     shake();
                     if (listener != null) {
-                        listener.onConfirm(Bitmap.createBitmap(originalBitmap), Bitmap.createBitmap(cropBitmap), layerRectF, getWidth(), getHeight());
+                        listener.onConfirm(Bitmap.createBitmap(originalBitmap), Bitmap.createBitmap(cropBitmap), layerRectF, mWidth, mHeight);
                     }
                     reset();
                 }
@@ -208,7 +207,7 @@ public class PreviewResultCase extends LayerCase {
         bitmap = null;
         originalBitmap = null;
         cropBitmap = null;
-        invalidate();
+        invalidateCase();
     }
 
     @SuppressLint("Recycle")
@@ -218,13 +217,13 @@ public class PreviewResultCase extends LayerCase {
         cancelAnim.addUpdateListener(animation -> {
             btnCancelX = (float) animation.getAnimatedValue();
             cancelRect.set(btnCancelX, btnY - cancelIndex, btnCancelX + cancelIndex * 2, btnY + cancelIndex);
-            invalidate();
+            invalidateCase();
         });
 
         ValueAnimator confirmAnim = ValueAnimator.ofFloat(leftX, rightX);
         confirmAnim.addUpdateListener(animation -> {
             btnConfirmX = (float) animation.getAnimatedValue();
-            invalidate();
+            invalidateCase();
         });
 
         AnimatorSet set = new AnimatorSet();
@@ -234,13 +233,6 @@ public class PreviewResultCase extends LayerCase {
         set.start();
     }
 
-
-    private void shake() {
-        View view = getCaseView();
-        if (view != null) {
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
-        }
-    }
 
     @Override
     protected void onDestroy() {

@@ -1,4 +1,4 @@
-package camerax.usecase;
+package camerax.core.tools;
 
 
 import android.content.Context;
@@ -19,6 +19,7 @@ import androidx.camera.core.resolutionselector.AspectRatioStrategy;
  * desc：
  **/
 public class CameraUtil {
+
     public static int aspectRatio(int width, int height) {
         int previewRatio = Math.max(width, height) / Math.min(width, height);
         double RATIO_4_3_VALUE = 4.0 / 3.0;

@@ -10,12 +10,14 @@ import android.widget.ImageView;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.camerax.usecase.usecase.ImageAnalysisCase;
+import com.camerax.usecase.usecase.ImageAnalysisCaseKt;
 import com.camerax.usecase.usecase.LensFacingCase;
 
+import camerax.core.tools.CameraUtil;
 import camerax.usecase.CameraXView;
 import camerax.usecase.UseCase;
 import usecase.impl.CaptureCase;
+import usecase.impl.CaptureResult;
 import usecase.impl.FocusCase;
 import usecase.impl.IdCardBackCase;
 import usecase.impl.IdCardFrontCase;
@@ -35,12 +37,22 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
         setContentView(R.layout.activity_camera);
         CameraXView camera = findViewById(R.id.camera);
         ImageView image = findViewById(R.id.image);
-
+        CaptureCase captureCase = new CaptureCase();
+        captureCase.setCaptureListener(new CaptureCase.CaptureListener() {
+            @Override
+            public void onCapture(CaptureResult result) {
+                Bitmap bitmap = result.getBitmap();
+                if (bitmap != null) {
+                    image.setImageBitmap(CameraUtil.rotateBitmap(bitmap, result.getRotationDegrees()));
+                }
+            }
+        });
         int type = getIntent().getIntExtra("type", 0);
         UseCase[] group = null;
         if (type == 0) {
             group = new UseCase[]{
-                    new LensFacingCase()
+                    new LensFacingCase(),
+                    captureCase
             };
         } else if (type == 1) {
             group = new UseCase[]{
@@ -59,7 +71,7 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
                     new PreviewResultCase(this)
             };
         } else if (type == 3) {
-            group = new UseCase[]{new ImageAnalysisCase()};
+            group = new UseCase[]{new ImageAnalysisCaseKt()};
         }
 
         camera.preview(this, () -> {

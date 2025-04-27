@@ -10,9 +10,11 @@ import androidx.camera.core.UseCase
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.core.content.ContextCompat
+import camerax.core.CameraCase
 import camerax.usecase.CameraXView
 import com.camerax.usecase.databinding.CaseImageAnalysisCaptureBinding
 import usecase.impl.BaseUseCase
+import usecase.impl.CaptureResult
 import kotlin.math.absoluteValue
 
 
@@ -29,7 +31,7 @@ class ImageAnalysisCaptureCase(private val listener: TakePictureListener?) : Bas
     }
 
     private val binding: CaseImageAnalysisCaptureBinding by lazy {
-        CaseImageAnalysisCaptureBinding.inflate(LayoutInflater.from(context))
+        CaseImageAnalysisCaptureBinding.inflate(LayoutInflater.from(mContext))
     }
 
     private var imageAnalysis: ImageAnalysis? = null
@@ -38,7 +40,13 @@ class ImageAnalysisCaptureCase(private val listener: TakePictureListener?) : Bas
 
     private var isTakePicture = false
 
-    override fun onAttach(context: Context, cameraView: CameraXView) {
+
+    override fun <Case : CameraCase<CameraXView?>?> onCaseAttach(
+        context: Context,
+        cameraView: CameraXView,
+        caseList: List<Case?>?
+    ) {
+        super.onCaseAttach(context, cameraView, caseList)
         imageAnalysis = ImageAnalysis.Builder()
             .setResolutionSelector(
                 ResolutionSelector.Builder()
@@ -69,12 +77,13 @@ class ImageAnalysisCaptureCase(private val listener: TakePictureListener?) : Bas
             )
         )
 
-        imageAnalysis?.setAnalyzer(ContextCompat.getMainExecutor(context)) {
+        imageAnalysis?.setAnalyzer(ContextCompat.getMainExecutor(mContext)) {
+            val rotationDegrees = it.imageInfo.rotationDegrees
             if (isTakePicture && bitmap == null) {
                 isTakePicture = false
                 bitmap = it.toBitmap()
                 bitmap?.let { bmp ->
-                    listener?.onPicture(bmp)
+                    listener?.onPicture(CaptureResult(bitmap, rotationDegrees))
                 }
             }
             it.close()
@@ -106,6 +115,6 @@ class ImageAnalysisCaptureCase(private val listener: TakePictureListener?) : Bas
 
 
     interface TakePictureListener {
-        fun onPicture(bitmap: Bitmap)
+        fun onPicture(result: CaptureResult)
     }
 }

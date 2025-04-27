@@ -9,7 +9,6 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.animation.LinearInterpolator;
 
 import androidx.annotation.NonNull;
@@ -24,7 +23,8 @@ import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
 import java.util.List;
 
-import camerax.usecase.CameraUtil;
+import camerax.core.CameraCase;
+import camerax.core.tools.CameraUtil;
 import camerax.usecase.CameraXView;
 
 /**
@@ -57,7 +57,8 @@ public class CaptureCase extends BaseUseCase {
     private final List<CaptureListener> captureListeners = new ArrayList<>();
 
     @Override
-    public void onAttach(Context context, CameraXView cameraView) {
+    public <Case extends CameraCase<CameraXView>> void onCaseAttach(@NonNull Context context, @NonNull CameraXView cameraView, List<Case> cases) {
+        super.onCaseAttach(context, cameraView, cases);
         imageCapture = new ImageCapture.Builder()
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .setFlashMode(cameraView.getFlashMode())
@@ -73,8 +74,8 @@ public class CaptureCase extends BaseUseCase {
     public void onCaseCreated() {
         outsideRadius = dp2px(45);
         radius = dp2px(35);
-        x = (float) getWidth() / 2;
-        y = getHeight() - dp2px(40) - outsideRadius;
+        x = (float) mWidth / 2;
+        y = mHeight - dp2px(40) - outsideRadius;
         paint.setStyle(Paint.Style.FILL);
         insideRadius = radius;
         rectF.set(x - outsideRadius, y - outsideRadius, x + outsideRadius, y + outsideRadius);
@@ -104,7 +105,7 @@ public class CaptureCase extends BaseUseCase {
             int action = event.getAction();
             if (action == MotionEvent.ACTION_DOWN) {
                 insideColor = Color.argb(100, 255, 255, 255);
-                invalidate();
+                invalidateCase();
             } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 insideColor = Color.WHITE;
                 onTap();
@@ -112,22 +113,21 @@ public class CaptureCase extends BaseUseCase {
             return true;
         } else {
             insideColor = Color.WHITE;
-            invalidate();
+            invalidateCase();
         }
         return false;
     }
 
     private void onTap() {
-        View view = getCaseView();
-        if (view != null) {
-            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        if (mCameraCaseView != null) {
+            mCameraCaseView.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
         }
         ValueAnimator anim = ValueAnimator.ofInt(radius, (int) (radius * 0.9f), radius);
         anim.setDuration(300);
         anim.setInterpolator(new LinearInterpolator());
         anim.addUpdateListener(animation -> {
             insideRadius = (int) animation.getAnimatedValue();
-            invalidate();
+            invalidateCase();
             if (animation.getCurrentPlayTime() >= animation.getDuration()) {
                 takePicture();
             }
@@ -141,7 +141,7 @@ public class CaptureCase extends BaseUseCase {
         log("开始拍照===");
         if (imageCapture != null) {
             isCapturing = true;
-            imageCapture.takePicture(ContextCompat.getMainExecutor(getContext()), new ImageCapture.OnImageCapturedCallback() {
+            imageCapture.takePicture(ContextCompat.getMainExecutor(mContext), new ImageCapture.OnImageCapturedCallback() {
                 @androidx.camera.core.ExperimentalGetImage
                 @Override
                 public void onCaptureSuccess(@NonNull ImageProxy proxy) {
@@ -150,17 +150,18 @@ public class CaptureCase extends BaseUseCase {
 //                    buffer.get(bytes);
 //                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
+                    int rotationDegrees = proxy.getImageInfo().getRotationDegrees();
                     isCapturing = false;
                     Bitmap bitmap = proxy.toBitmap();
                     handler.post(() -> {
-                        for (camerax.usecase.UseCase ca : getOtherGroupCase()) {
+                        for (CameraCase<CameraXView> ca : getOtherGroupCase()) {
                             if (ca != null) {
-                                ca.postData(EVENT_TAKE_PICTURE, bitmap);
+                                ca.postData(EVENT_TAKE_PICTURE, new CaptureResult(bitmap, rotationDegrees));
                             }
                         }
                         for (CaptureListener listener : captureListeners) {
                             if (listener != null) {
-                                listener.onCapture(new CaptureResult(bitmap));
+                                listener.onCapture(new CaptureResult(bitmap, rotationDegrees));
                             }
                         }
                     });
@@ -177,7 +178,7 @@ public class CaptureCase extends BaseUseCase {
                                 listener.onCapture(new CaptureResult(exception));
                             }
                         }
-                        for (camerax.usecase.UseCase uc : getOtherGroupCase()) {
+                        for (CameraCase<CameraXView> uc : getOtherGroupCase()) {
                             if (uc != null) {
                                 uc.postData(EVENT_TAKE_PICTURE_ERROR, exception);
                             }
@@ -218,24 +219,4 @@ public class CaptureCase extends BaseUseCase {
         void onCapture(CaptureResult result);
     }
 
-    public static class CaptureResult {
-        private Bitmap bitmap;
-        private ImageCaptureException exception;
-
-        public CaptureResult(ImageCaptureException exception) {
-            this.exception = exception;
-        }
-
-        public CaptureResult(Bitmap bitmap) {
-            this.bitmap = bitmap;
-        }
-
-        public Bitmap getBitmap() {
-            return bitmap;
-        }
-
-        public ImageCaptureException getException() {
-            return exception;
-        }
-    }
 }

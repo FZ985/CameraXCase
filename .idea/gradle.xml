@@ -10,6 +10,8 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/CameraXController" />
+            <option value="$PROJECT_DIR$/CameraXCore" />
             <option value="$PROJECT_DIR$/CameraXUseCase" />
             <option value="$PROJECT_DIR$/CameraXUseCaseImpl" />
             <option value="$PROJECT_DIR$/app" />

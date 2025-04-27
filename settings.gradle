@@ -16,3 +16,5 @@ rootProject.name = "CameraXCase"
 include ':app'
 include ':CameraXUseCase'
 include ':CameraXUseCaseImpl'
+include ':CameraXCore'
+include ':CameraXController'

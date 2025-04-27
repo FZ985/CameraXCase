@@ -38,7 +38,7 @@ public class FocusCase extends BaseUseCase {
         mPaint.setStrokeWidth(4);
         mPaint.setStyle(Paint.Style.STROKE);
         visibleColor = getPrimaryColor();
-        reset(getWidth() / 2.0f, getHeight() / 2.0f, size / 2);
+        reset(mWidth / 2.0f, mHeight / 2.0f, size / 2);
     }
 
     @Override
@@ -50,10 +50,10 @@ public class FocusCase extends BaseUseCase {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (getPreviewView() == null || getCamera() == null) {
+        if (mPreviewView == null || getCamera() == null) {
             return false;
         }
-        boolean previewRet = getPreviewView().onTouchEvent(event);
+        boolean previewRet = mPreviewView.onTouchEvent(event);
         androidx.camera.core.CameraControl cameraControl = getCamera().getCameraControl();
         int action = event.getAction();
         if (action == MotionEvent.ACTION_DOWN) {
@@ -63,14 +63,14 @@ public class FocusCase extends BaseUseCase {
         } else if (action == MotionEvent.ACTION_UP) {
             if (event.getPointerCount() == 1 && !isDoubleTap) {
                 cameraControl.cancelFocusAndMetering();
-                MeteringPoint point = getPreviewView().getMeteringPointFactory().createPoint(event.getX(), event.getY());
+                MeteringPoint point = mPreviewView.getMeteringPointFactory().createPoint(event.getX(), event.getY());
                 FocusMeteringAction build = new FocusMeteringAction.Builder(point).build();
                 cameraControl.startFocusAndMetering(build);
                 //聚焦动画
                 mPaint.setColor(visibleColor);
                 startFocus(event.getX(), event.getY(), () -> {
                     mPaint.setColor(goneColor);
-                    invalidate();
+                    invalidateCase();
                 });
                 return previewRet;
             }
@@ -90,7 +90,7 @@ public class FocusCase extends BaseUseCase {
         scale.addUpdateListener(animation -> {
             int value = (int) animation.getAnimatedValue();
             reset(x, y, value);
-            invalidate();
+            invalidateCase();
         });
         AnimatorSet animSet = new AnimatorSet();
         animSet.addListener(new AnimatorListenerAdapter() {

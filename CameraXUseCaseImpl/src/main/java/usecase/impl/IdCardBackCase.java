@@ -42,7 +42,7 @@ public class IdCardBackCase extends LayerCase {
         backPaint.setStyle(Paint.Style.STROKE);
         backPaint.setStrokeWidth(6);
 
-        Drawable drawable = ContextCompat.getDrawable(getContext(), R.drawable.vector_idcard_person);
+        Drawable drawable = ContextCompat.getDrawable(mContext, R.drawable.vector_idcard_person);
 
         offsetX = dp2px(18);
         offsetY = dp2px(10);
