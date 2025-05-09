@@ -68,7 +68,6 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         mHolder = getHolder();
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        mHolder.addCallback(this);
         openCamera(false);
         orientationEventListener = new OrientationEventListener(getContext()) {
             @Override
@@ -89,6 +88,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
             }
         };
         orientationEventListener.enable();
+        mHolder.addCallback(this);
     }
 
     private Camera getCameraInstance(int facing) {

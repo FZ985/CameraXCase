@@ -81,15 +81,19 @@ class CameraPreviewView : RelativeLayout {
     }
 
     fun autoFitSize() {
-        val cameraManager = context.getSystemService(CAMERA_SERVICE) as CameraManager
-        val characteristics =
-            cameraManager.getCameraCharacteristics(getCameraId().toString())
-        val previewSize = getPreviewOutputSize(
-            display,
-            characteristics,
-            SurfaceHolder::class.java
-        )
-        Log.e("previewSize", "previewSize:${previewSize.width},${previewSize.height}")
-        cameraView.setAspectRatio(previewSize.width, previewSize.height)
+        try {
+            val cameraManager = context.getSystemService(CAMERA_SERVICE) as CameraManager
+            val characteristics =
+                cameraManager.getCameraCharacteristics(getCameraId().toString())
+            val previewSize = getPreviewOutputSize(
+                display,
+                characteristics,
+                SurfaceHolder::class.java
+            )
+            Log.e("previewSize", "previewSize:${previewSize.width},${previewSize.height}")
+            cameraView.setAspectRatio(previewSize.width, previewSize.height)
+        } catch (e: Exception) {
+            Log.e("fitSize", "fitSize Error:" + e.message)
+        }
     }
 }
