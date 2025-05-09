@@ -26,6 +26,7 @@
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
             android:onClick="openCamera"
+            android:visibility="gone"
             android:text="身份证正面"
             android:textAllCaps="false" />
 
@@ -33,6 +34,7 @@
             android:id="@+id/backCamera"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:layout_marginLeft="10dp"
             android:onClick="openCamera"
             android:text="身份证反面"
@@ -43,6 +45,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="10dp"
+            android:visibility="gone"
             android:onClick="openCamera"
             android:text="图像分析"
             android:textAllCaps="false" />
@@ -65,6 +68,27 @@
             android:layout_marginTop="50dp"
             android:onClick="openCamera"
             android:text="Controller拍照"
+            android:textAllCaps="false" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/old_camera"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="10dp"
+            android:onClick="openCamera"
+            android:text="废弃camera"
+            android:textAllCaps="false" />
+
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/camerax_test"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="10dp"
+            android:onClick="openCamera"
+            android:text="Camerax SurfaceView Test"
             android:textAllCaps="false" />
 
         <ImageView

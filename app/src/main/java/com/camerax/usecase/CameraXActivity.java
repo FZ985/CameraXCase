@@ -6,6 +6,7 @@ import android.graphics.Bitmap;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -44,6 +45,10 @@ public class CameraXActivity extends AppCompatActivity implements PreviewResultC
                 Bitmap bitmap = result.getBitmap();
                 if (bitmap != null) {
                     image.setImageBitmap(CameraUtil.rotateBitmap(bitmap, result.getRotationDegrees()));
+                } else {
+                    if (result.getException() != null) {
+                        Toast.makeText(CameraXActivity.this, result.getException().getMessage(), Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         });

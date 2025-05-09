@@ -10,6 +10,8 @@ import android.widget.RelativeLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.camera.core.Camera;
+import androidx.camera.core.CameraInfo;
+import androidx.camera.core.CameraInfoUnavailableException;
 import androidx.camera.core.CameraSelector;
 import androidx.camera.core.ImageCapture;
 import androidx.camera.core.Preview;
@@ -17,10 +19,7 @@ import androidx.camera.core.resolutionselector.AspectRatioStrategy;
 import androidx.camera.core.resolutionselector.ResolutionSelector;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
-import androidx.core.content.ContextCompat;
 import androidx.lifecycle.LifecycleOwner;
-
-import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +50,9 @@ public class CameraXView extends RelativeLayout {
     Camera camera;
     int mFlashMode = ImageCapture.FLASH_MODE_OFF;
 
-    private CameraSelector cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+    private CameraSelector userCameraSelector;
+    private CameraSelector defaultSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+//    private CameraSelector cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
 
     private CameraCase.CaseDataObserver innerObserver = new CameraCase.CaseDataObserver() {
         @Override
@@ -79,10 +80,12 @@ public class CameraXView extends RelativeLayout {
         setWillNotDraw(false);
         View view = View.inflate(getContext(), R.layout.camerax_view, this);
         cameraView = view.findViewById(R.id.camera_);
-        cameraView.setImplementationMode(PreviewView.ImplementationMode.PERFORMANCE);
+        cameraView.setImplementationMode(PreviewView.ImplementationMode.COMPATIBLE);
         caseContainer = view.findViewById(R.id.case_container);
     }
 
+
+    @SuppressLint({"UnsafeOptInUsageError", "RestrictedApi"})
     private void initCamera(Runnable runnable) {
         post(() -> {
 
@@ -96,8 +99,28 @@ public class CameraXView extends RelativeLayout {
             // CameraProvider
             ProcessCameraProvider provider = cameraProvider;
 
-            // CameraSelector
-            CameraSelector cameraSelector = this.cameraSelector;
+            CameraSelector cameraSelector = defaultSelector;
+            if (userCameraSelector != null) {
+                cameraSelector = userCameraSelector;
+            } else {
+                try {
+                    boolean hasBackCamera = cameraProvider.hasCamera(CameraSelector.DEFAULT_BACK_CAMERA);
+                    boolean hasFrontCamera = cameraProvider.hasCamera(CameraSelector.DEFAULT_FRONT_CAMERA);
+                    log("hasBackCamera:" + hasBackCamera + "," + hasFrontCamera);
+                    if (hasBackCamera) {
+                        cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA;
+                    } else {
+                        if (hasFrontCamera) {
+                            cameraSelector = CameraSelector.DEFAULT_FRONT_CAMERA;
+                        } else {
+                            cameraSelector = getInnerSelector();
+                        }
+                    }
+                } catch (CameraInfoUnavailableException e) {
+                    log("CameraInfoUnavailableException:" + e.getMessage());
+                    cameraSelector = getInnerSelector();
+                }
+            }
 
             // Preview
             Preview preview = new Preview.Builder()
@@ -120,22 +143,30 @@ public class CameraXView extends RelativeLayout {
             // Must unbind the use-cases before rebinding them
             provider.unbindAll();
 
-            // A variable number of use-cases can be passed here -
-            // camera provides access to CameraControl & CameraInfo
-            camera = provider.bindToLifecycle(lifecycleOwner, cameraSelector, caseArr);
             // Attach the viewfinder's surface provider to preview use case
             preview.setSurfaceProvider(cameraView.getSurfaceProvider());
 
+            // A variable number of use-cases can be passed here -
+            // camera provides access to CameraControl & CameraInfo
+            camera = provider.bindToLifecycle(lifecycleOwner, cameraSelector, caseArr);
             if (runnable != null) {
                 runnable.run();
             }
         });
     }
 
+    private CameraSelector getInnerSelector() {
+        CameraSelector availableCameraSelector = getAvailableCameraSelector();
+        if (availableCameraSelector != null) {
+            return availableCameraSelector;
+        } else return defaultSelector;
+    }
+
     public final void preview(@NonNull LifecycleOwner lifecycleOwner, @NonNull Runnable initSuccessRun, @Nullable UseCase... useCases) {
         post(() -> {
             try {
                 this.lifecycleOwner = lifecycleOwner;
+                cameraProvider = ProcessCameraProvider.getInstance(getContext()).get();
                 if (useCases != null && useCases.length > 0) {
                     caseGroup.clear();
                     caseGroup.addAll(Arrays.asList(useCases));
@@ -148,38 +179,39 @@ public class CameraXView extends RelativeLayout {
                     updateCase();
                 }
 
-                ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
-                future.addListener(() -> {
-                    try {
-//                    cameraProvider = ProcessCameraProvider.getInstance(getContext()).get();
-                        cameraProvider = future.get();
-                        initCamera(() -> {
-                            int width = getWidth();
-                            int height = getHeight();
-                            //添加CaseView
-                            caseContainer.removeAllViews();
-                            for (UseCase uc : caseGroup) {
-                                if (uc != null) {
-                                    RelativeLayout.LayoutParams params = new LayoutParams(width, height);
-                                    CameraCaseView<CameraXView> caseView = new CameraCaseView<>(getContext(), uc);
-                                    caseView.setLayoutParams(params);
-                                    uc.onCreate(getContext(), this, cameraView, caseView, width, height, camera);
-                                    uc.registerCaseObserver(innerObserver);
-                                    caseContainer.addView(caseView, params);
-                                }
-                            }
-
-                            for (UseCase uc : caseGroup) {
-                                if (uc != null) {
-                                    uc.onAllCaseCreated();
-                                }
-                            }
-                            initSuccessRun.run();
-                        });
-                    } catch (Exception e) {
-                        Log.e("CameraXView", "预览失败e:" + e.getMessage());
+                initCamera(() -> {
+                    int width = getWidth();
+                    int height = getHeight();
+                    //添加CaseView
+                    caseContainer.removeAllViews();
+                    for (UseCase uc : caseGroup) {
+                        if (uc != null) {
+                            RelativeLayout.LayoutParams params = new LayoutParams(width, height);
+                            CameraCaseView<CameraXView> caseView = new CameraCaseView<>(getContext(), uc);
+                            caseView.setLayoutParams(params);
+                            uc.onCreate(getContext(), this, cameraView, caseView, width, height, camera);
+                            uc.registerCaseObserver(innerObserver);
+                            caseContainer.addView(caseView, params);
+                        }
                     }
-                }, ContextCompat.getMainExecutor(getContext()));
+
+                    for (UseCase uc : caseGroup) {
+                        if (uc != null) {
+                            uc.onAllCaseCreated();
+                        }
+                    }
+                    initSuccessRun.run();
+                });
+
+//                ListenableFuture<ProcessCameraProvider> future = ProcessCameraProvider.getInstance(getContext());
+//                future.addListener(() -> {
+//                    try {
+//                        cameraProvider = future.get();
+//
+//                    } catch (Exception e) {
+//                        Log.e("CameraXView", "预览失败e:" + e.getMessage());
+//                    }
+//                }, ContextCompat.getMainExecutor(getContext()));
             } catch (Exception e) {
                 Log.e("CameraXView", "预览失败:" + e.getMessage());
             }
@@ -238,13 +270,28 @@ public class CameraXView extends RelativeLayout {
         }
     }
 
+    @SuppressLint("RestrictedApi")
+    private CameraSelector getAvailableCameraSelector() {
+        if (cameraProvider != null) {
+            List<CameraInfo> availableCameraInfos = cameraProvider.getAvailableCameraInfos();
+            CameraInfo firstCameraInfo = availableCameraInfos.get(0);
+            return firstCameraInfo.getCameraSelector();
+        }
+        return null;
+    }
+
+
     public final int getFlashMode() {
         return mFlashMode;
     }
 
     @SuppressLint("RestrictedApi")
     public final int getLensFacing() {
-        Integer lensFacing = cameraSelector.getLensFacing();
+        CameraSelector selector = userCameraSelector;
+        if (selector == null) {
+            selector = defaultSelector;
+        }
+        Integer lensFacing = selector.getLensFacing();
         if (lensFacing != null) {
             return lensFacing;
         }
@@ -255,17 +302,29 @@ public class CameraXView extends RelativeLayout {
         this.mFlashMode = mFlashMode;
     }
 
-    public final CameraSelector getCameraSelector() {
-        return cameraSelector;
+    public final CameraSelector getDefaultCameraSelector() {
+        return defaultSelector;
     }
-
 
     public LifecycleOwner getLifecycleOwner() {
         return lifecycleOwner;
     }
 
+    public ProcessCameraProvider getCameraProvider() {
+        return cameraProvider;
+    }
+
+    public final CameraSelector getCameraSelector() {
+        return userCameraSelector;
+    }
+
     public final void setCameraSelector(@NonNull CameraSelector cameraSelector) {
-        this.cameraSelector = cameraSelector;
+        this.userCameraSelector = cameraSelector;
+    }
+
+
+    private void log(String m) {
+        Log.e("CameraXView", m);
     }
 
 }

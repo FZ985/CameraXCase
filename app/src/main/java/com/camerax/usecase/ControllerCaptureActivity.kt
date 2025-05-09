@@ -1,6 +1,9 @@
 package com.camerax.usecase
 
+import android.content.Intent
+import android.graphics.Bitmap
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.camerax.usecase.controller.CaptureControllerCase
 import com.camerax.usecase.databinding.ActivityControllerCaptureBinding
@@ -21,6 +24,17 @@ class ControllerCaptureActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
-        binding.camera.preview(this, {}, CaptureControllerCase())
+        Toast.makeText(this,"rotation:"+windowManager.defaultDisplay.rotation, Toast.LENGTH_SHORT).show()
+        binding.camera.preview(
+            this,
+            {},
+            CaptureControllerCase(object : CaptureControllerCase.Callback {
+                override fun onImage(bitmap: Bitmap) {
+                    MainActivity.bitmap = bitmap
+                    setResult(RESULT_OK, Intent())
+                    finish()
+                }
+            })
+        )
     }
 }

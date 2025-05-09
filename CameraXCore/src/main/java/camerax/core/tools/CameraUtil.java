@@ -129,4 +129,45 @@ public class CameraUtil {
 
         return totalRotation;
     }
+
+
+    public static int getOldRotationDegrees(Context context, int cameraId) {
+        android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+        android.hardware.Camera.getCameraInfo(cameraId, info);
+        int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE))
+                .getDefaultDisplay().getRotation();
+
+        int degrees = 0;
+        if (rotation == Surface.ROTATION_0) {
+            degrees = 0;
+        } else if (rotation == Surface.ROTATION_90) {
+            degrees = 90;
+        } else if (rotation == Surface.ROTATION_180) {
+            degrees = 180;
+        } else if (rotation == Surface.ROTATION_270) {
+            degrees = 270;
+        }
+
+        int result;
+        int orientation = compatOrientation(info);
+        if (info.facing == android.hardware.Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (orientation + degrees) % 360;
+        } else {
+            result = (orientation - degrees + 360) % 360;
+        }
+        return result;
+
+    }
+
+
+    public static int compatOrientation(android.hardware.Camera.CameraInfo info) {
+        int orientation = info.orientation;
+        if (orientation < 0) {
+            return 0;
+        }
+        if (orientation % 90 == 0) {
+            return orientation;
+        }
+        return Math.round((float) orientation / 90) * 90;
+    }
 }

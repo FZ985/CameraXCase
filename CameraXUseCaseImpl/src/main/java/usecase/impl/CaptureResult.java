@@ -3,6 +3,8 @@ package usecase.impl;
 
 import android.graphics.Bitmap;
 
+import androidx.annotation.Nullable;
+
 /**
  * by JFZ
  * 2025/4/26
@@ -25,6 +27,7 @@ public class CaptureResult {
         this.rotationDegrees = rotationDegrees;
     }
 
+    @Nullable
     public Bitmap getBitmap() {
         return bitmap;
     }
@@ -33,6 +36,7 @@ public class CaptureResult {
         return rotationDegrees;
     }
 
+    @Nullable
     public Exception getException() {
         return exception;
     }

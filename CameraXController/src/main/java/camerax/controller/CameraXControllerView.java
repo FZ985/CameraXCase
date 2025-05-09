@@ -124,4 +124,8 @@ public class CameraXControllerView extends RelativeLayout {
     public LifecycleCameraController getCameraController() {
         return cameraController;
     }
+
+    public LifecycleOwner getLifecycleOwner() {
+        return lifecycleOwner;
+    }
 }

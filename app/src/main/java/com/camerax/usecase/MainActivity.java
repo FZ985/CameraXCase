@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
@@ -17,6 +18,7 @@ import androidx.core.content.ContextCompat;
 public class MainActivity extends AppCompatActivity {
 
     public static Bitmap bitmap = null;
+    public static Uri uri = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,9 +41,15 @@ public class MainActivity extends AppCompatActivity {
             start(CameraXActivity.class, 3);
         } else if (id == R.id.capture) {
             startActivityForResult(new Intent(this, ImageAnalysisCaptureActivity.class), 100);
+        } else if (id == R.id.camerax_test) {
+            startActivityForResult(new Intent(this, CameraXTestActivity.class), 100);
         } else if (id == R.id.controller_capture) {
             if (!hasAudioPermission()) return;
             startActivityForResult(new Intent(this, ControllerCaptureActivity.class), 100);
+//            startActivityForResult(new Intent(this, ControllerCaptureActivity.class), 101);
+        } else if (id == R.id.old_camera) {
+            startActivityForResult(new Intent(this, OldCameraActivity.class), 100);
+//            startActivityForResult(new Intent(this, ControllerCaptureActivity.class), 101);
         }
     }
 
@@ -57,6 +65,14 @@ public class MainActivity extends AppCompatActivity {
             if (bitmap != null) {
                 ImageView iv = findViewById(R.id.image);
                 iv.setImageBitmap(bitmap);
+            }
+        }
+
+        if (requestCode == 101
+                && resultCode == Activity.RESULT_OK) {
+            if (uri != null) {
+                ImageView iv = findViewById(R.id.image);
+                iv.setImageURI(uri);
             }
         }
     }
