@@ -356,6 +356,9 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                             if (callback != null) {
                                 callback.onTakePicture(camera, buildImageInfo(data, false, camera));
                             }
+                            isStartCapture = false;
+                            currentFrame = null;
+                            camera.startPreview();
                         }
                     });
                 } catch (RuntimeException e) {
