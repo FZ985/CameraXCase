@@ -8,10 +8,14 @@ import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.Size;
 import android.view.OrientationEventListener;
 import android.view.PixelCopy;
 import android.view.Surface;
@@ -26,7 +30,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-import camerax.core.tools.CameraUtil;
 
 /**
  * A basic Camera preview class
@@ -51,6 +54,8 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
     private byte[] currentFrame;
 
     private boolean isStartCapture = false;
+
+    private int mOrientation;
 
     private float aspectRatio = 0f;
 
@@ -88,6 +93,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
             }
         };
         orientationEventListener.enable();
+
         mHolder.addCallback(this);
     }
 
@@ -129,41 +135,38 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         currentFrame = null;
         isCameraPreview = false;
         if (mCamera != null) {
-            mCamera.setPreviewCallback(new Camera.PreviewCallback() {
-                @Override
-                public void onPreviewFrame(byte[] data, Camera camera) {
-                    if (!isCameraPreview) {
-                        if (cameraCallback != null) {
-                            cameraCallback.onPreview();
-                        }
-                    }
-                    isCameraPreview = true;
-                    mPreviewCamera = camera;
-                    if (currentFrame == null && isStartCapture) {
-                        currentFrame = data;
-                        isStartCapture = false;
-                    }
-                }
-            });
-            mCamera.setErrorCallback(new Camera.ErrorCallback() {
-                @Override
-                public void onError(int error, Camera camera) {
-                    Log.e(TAG, "相机失败code:" + error);
-                    Toast.makeText(getContext(), "相机启动失败：" + error + ",请重新启动", Toast.LENGTH_SHORT).show();
-//                    Camera.CAMERA_ERROR_UNKNOWN：未知错误，通常表示相机的硬件或软件出现了问题。
-//                    Camera.CAMERA_ERROR_SERVER_DIED：相机服务进程崩溃或被终止，通常是由于系统问题导致相机无法正常工作。
-                    if (cameraCallback != null) {
-                        cameraCallback.onError(error, "");
-                    }
-                }
-            });
-
+            Log.e("tag", "mCamera:" + getWidth());
             try {
                 mCamera.setPreviewDisplay(mHolder);
                 mCamera.startPreview();
             } catch (IOException e) {
                 Log.d(TAG, "Error setting camera preview: " + e.getMessage());
             }
+
+//            post(() -> {
+//                Camera.Parameters parameters = mCamera.getParameters();
+//                if (parameters != null) {
+//                    // 获取支持的拍照尺寸列表
+//                    List<Camera.Size> supportedSizes = parameters.getSupportedPictureSizes();
+//                    if (supportedSizes != null && supportedSizes.size() > 0) {
+//                        // 选择一个适当的尺寸
+////                    Camera.Size optimalSize = getMaxSize(supportedSizes);
+//                        Camera.Size optimalSize = getOptimalPreviewSize(supportedSizes, getWidth(), getHeight());
+//                        int bufferSize = optimalSize.width * optimalSize.height * ImageFormat.getBitsPerPixel(ImageFormat.NV21) / 8;
+//                        byte[] buffer = new byte[bufferSize];
+//                        mCamera.addCallbackBuffer(buffer);
+//
+//                        mCamera.setPreviewCallbackWithBuffer(new Camera.PreviewCallback() {
+//                            @Override
+//                            public void onPreviewFrame(byte[] data, Camera camera) {
+//                                Log.d("Camera", "Preview frame received: " + data.length);
+//                                camera.addCallbackBuffer(data); // 重新放回 buffer
+//                            }
+//                        });
+//                    }
+//                }
+//            });
+
         } else {
             if (cameraCallback != null) {
                 cameraCallback.onError(NO_CAMERA, "not facing camera");
@@ -194,9 +197,11 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
             if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
                 result = (orientation + rotationDegrees) % 360;
                 result = (360 - result) % 360; // 镜像
+                mOrientation = result;
                 mCamera.setDisplayOrientation(result);
             } else { // back-facing
                 result = (orientation - rotationDegrees + 360) % 360;
+                mOrientation = result;
                 mCamera.setDisplayOrientation(result);
             }
 
@@ -206,9 +211,42 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
+        Log.e("tag", "surfaceCreated:" + cameraCallback);
         if (cameraCallback != null) {
             cameraCallback.onSurfaceCreated();
         }
+
+        post(() -> {
+            mCamera.setPreviewCallback(new Camera.PreviewCallback() {
+                @Override
+                public void onPreviewFrame(byte[] data, Camera camera) {
+                    if (!isCameraPreview) {
+                        if (cameraCallback != null) {
+                            cameraCallback.onPreview();
+                        }
+                    }
+                    isCameraPreview = true;
+                    mPreviewCamera = camera;
+                    if (currentFrame == null && isStartCapture) {
+                        currentFrame = data;
+                        isStartCapture = false;
+                    }
+                }
+            });
+
+            mCamera.setErrorCallback(new Camera.ErrorCallback() {
+                @Override
+                public void onError(int error, Camera camera) {
+                    Log.e(TAG, "相机失败code:" + error);
+                    Toast.makeText(getContext(), "相机启动失败：" + error + ",请重新启动", Toast.LENGTH_SHORT).show();
+//                    Camera.CAMERA_ERROR_UNKNOWN：未知错误，通常表示相机的硬件或软件出现了问题。
+//                    Camera.CAMERA_ERROR_SERVER_DIED：相机服务进程崩溃或被终止，通常是由于系统问题导致相机无法正常工作。
+                    if (cameraCallback != null) {
+                        cameraCallback.onError(error, "");
+                    }
+                }
+            });
+        });
     }
 
     @Override
@@ -265,6 +303,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
             // preview surface does not exist
             return;
         }
+
         if (mCamera == null) {
             return;
         }
@@ -283,11 +322,13 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                 if (supportedSizes != null && supportedSizes.size() > 0) {
                     // 选择一个适当的尺寸
 //                    Camera.Size optimalSize = getMaxSize(supportedSizes);
-                    Camera.Size optimalSize = getOptimalPreviewSize(supportedSizes, getWidth(), getHeight());
+                    Camera.Size optimalSize = getBestSizeMatchingScreen(supportedSizes, getWidth(), getHeight());
 
-                    // 设置拍照尺寸
-                    parameters.setPictureSize(optimalSize.width, optimalSize.height);
-                    parameters.setPreviewSize(optimalSize.width, optimalSize.height);
+                    if (optimalSize != null) {
+                        // 设置拍照尺寸
+                        parameters.setPictureSize(optimalSize.width, optimalSize.height);
+                        parameters.setPreviewSize(optimalSize.width, optimalSize.height);
+                    }
                 }
                 mCamera.setParameters(parameters);
             }
@@ -319,15 +360,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
     }
 
     private Camera.Size getOptimalPreviewSize(List<Camera.Size> sizes, int width, int height) {
-        int previewRatio = Math.max(width, height) / Math.min(width, height);
-        double RATIO_4_3_VALUE = 4.0 / 3.0;
-        double RATIO_16_9_VALUE = 16.0 / 9.0;
-        double targetRatio;
-        if (Math.abs(previewRatio - RATIO_4_3_VALUE) <= Math.abs(previewRatio - RATIO_16_9_VALUE)) {
-            targetRatio = RATIO_4_3_VALUE;
-        } else {
-            targetRatio = RATIO_16_9_VALUE;
-        }
+        double targetRatio = getPreviewRatio(width, height);
         final double ASPECT_TOLERANCE = 0.05; // 宽高比容忍误差
         Camera.Size bestSize = null;
         for (Camera.Size size : sizes) {
@@ -339,12 +372,84 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                 bestSize = size;
             }
         }
-        Log.e("size", "size:" + bestSize.width + "," + bestSize.height);
+//        Log.e("size", "size:" + bestSize.width + "," + bestSize.height);
         return bestSize;
     }
 
+    private Camera.Size getBestSizeMatchingScreen(List<Camera.Size> sizes, int width, int height) {
+        Size previewSize = null;
+        Camera.Size sizeOne = null;
+        try {
+            CameraManager cameraManager = (CameraManager) getContext().getSystemService(Context.CAMERA_SERVICE);
+            CameraCharacteristics characteristics =
+                    cameraManager.getCameraCharacteristics(getCameraId() + "");
+            previewSize = CameraSizesKt.getPreviewOutputSize(
+                    getDisplay(),
+                    characteristics,
+                    SurfaceHolder.class,
+                    null
+            );
+        } catch (Exception e) {
+            Log.e("Surface_", "fitSize Error:" + e.getMessage());
+        }
+        if (previewSize != null) {
+            Log.e("Surface_previewSize", "previewSize:" + previewSize.getWidth() + "," + previewSize.getHeight());
+            for (Camera.Size s : sizes) {
+                if (s.width == previewSize.getWidth() && s.height == previewSize.getHeight()) {
+                    sizeOne = s;
+                }
+            }
+        }
 
-    public void takePicture(TakePictureCallback callback) {
+        if (sizeOne != null) {
+            return sizeOne;
+        } else {
+            double targetRatio = getPreviewRatio(width, height);
+            final double ASPECT_TOLERANCE = 0.05; // 宽高比容忍误差
+            DisplayMetrics metrics = getContext().getResources().getDisplayMetrics();
+            int screenWidth = metrics.widthPixels;
+            int screenHeight = metrics.heightPixels;
+
+            Camera.Size bestSize = null;
+            int minDiff = Integer.MAX_VALUE;
+
+            for (Camera.Size size : sizes) {
+                float sizeRatio = (float) size.width / size.height;
+                if (Math.abs(sizeRatio - targetRatio) > ASPECT_TOLERANCE) {
+                    continue;
+                }
+
+                int diff = Math.abs(size.width - screenWidth) + Math.abs(size.height - screenHeight);
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    bestSize = size;
+                }
+            }
+
+            if (bestSize == null) {
+                bestSize = getOptimalPreviewSize(sizes, width, height);
+            } else {
+                Log.e("size", "size:" + bestSize.width + "," + bestSize.height);
+            }
+            return bestSize;
+        }
+    }
+
+    private double getPreviewRatio(int width,int height){
+        int previewRatio = Math.max(width, height) / Math.min(width, height);
+        double RATIO_4_3_VALUE = 4.0 / 3.0;
+        double RATIO_16_9_VALUE = 16.0 / 9.0;
+        double targetRatio;
+        if (Math.abs(previewRatio - RATIO_4_3_VALUE) <= Math.abs(previewRatio - RATIO_16_9_VALUE)) {
+            targetRatio = RATIO_4_3_VALUE;
+        } else {
+            targetRatio = RATIO_16_9_VALUE;
+        }
+        return targetRatio;
+    }
+
+
+    public final void takePicture(TakePictureCallback callback) {
         currentFrame = null;
         if (mCamera != null) {
             isStartCapture = true;
@@ -362,7 +467,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                         }
                     });
                 } catch (RuntimeException e) {
-                    Log.e(TAG, "拍照失败");
+                    Log.e(TAG, "拍照失败:" + e.getMessage());
                     postDelayed(() -> {
                         if (callback != null && currentFrame != null && currentFrame.length > 0) {
                             callback.onTakePicture(mPreviewCamera, buildImageInfo(currentFrame, true, mPreviewCamera));
@@ -403,7 +508,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             imageInfo.setFront(true);
             if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                bitmap = CameraUtil.flipBitmapVertically(bitmap);
+                bitmap = OldCameraUtil.flipBitmapVertically(bitmap);
             }
         } else {
             imageInfo.setFront(false);
@@ -412,7 +517,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         return imageInfo;
     }
 
-    public void takePicture2(TakePictureCallback2 callback) {
+    public final void takePicture2(TakePictureCallback2 callback) {
         currentFrame = null;
         if (mCamera != null && isCameraPreview) {
             isStartCapture = true;
@@ -477,7 +582,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
             imageInfo.setFront(true);
             if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                bitmap = CameraUtil.flipBitmapVertically(bitmap);
+                bitmap = OldCameraUtil.flipBitmapVertically(bitmap);
             }
         } else {
             imageInfo.setFront(false);
@@ -509,7 +614,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         super.onDetachedFromWindow();
     }
 
-    public void releaseCamera() {
+    public final void releaseCamera() {
         if (mCamera != null) {
             mCamera.setPreviewCallback(null);
             mCamera.release();
@@ -521,11 +626,15 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         }
     }
 
-    public void setCameraCallback(OnCameraCallback cameraCallback) {
+    public final int getOrientation() {
+        return mOrientation;
+    }
+
+    public final void setCameraCallback(OnCameraCallback cameraCallback) {
         this.cameraCallback = cameraCallback;
     }
 
-    public int getCameraId() {
+    public final int getCameraId() {
         return mCameraId;
     }
 }
