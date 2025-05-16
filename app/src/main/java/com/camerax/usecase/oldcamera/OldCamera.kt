@@ -18,7 +18,7 @@ interface TakePictureCallback {
 class ImageInfo : Serializable {
     var data: ByteArray = byteArrayOf()
 
-    var isYuv: Boolean = false
+    var isYuvToBitmap: Boolean = false
 
     var isFront: Boolean = false
 
@@ -27,18 +27,6 @@ class ImageInfo : Serializable {
     var isPortrait: Boolean = false
 
     var bitmap: Bitmap? = null
-}
-
-interface TakePictureCallback2 {
-    fun onTakePicture(image: ImageInfo2)
-}
-
-class ImageInfo2 : Serializable {
-    var bitmap: Bitmap? = null
-    var isYuv: Boolean = false
-    var isFront: Boolean = false
-    var degrees: Int = 0
-    var isPortrait: Boolean = false
 }
 
 interface OnCameraCallback {

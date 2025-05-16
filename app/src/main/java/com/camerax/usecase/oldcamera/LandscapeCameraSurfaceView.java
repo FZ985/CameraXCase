@@ -211,7 +211,6 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
-        Log.e("tag", "surfaceCreated:" + cameraCallback);
         if (cameraCallback != null) {
             cameraCallback.onSurfaceCreated();
         }
@@ -435,7 +434,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         }
     }
 
-    private double getPreviewRatio(int width,int height){
+    private double getPreviewRatio(int width, int height) {
         int previewRatio = Math.max(width, height) / Math.min(width, height);
         double RATIO_4_3_VALUE = 4.0 / 3.0;
         double RATIO_16_9_VALUE = 16.0 / 9.0;
@@ -459,7 +458,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                         @Override
                         public void onPictureTaken(byte[] data, Camera camera) {
                             if (callback != null) {
-                                callback.onTakePicture(camera, buildImageInfo(data, false, camera));
+                                callback.onTakePicture(camera, buildImageInfo(data, false, null, camera));
                             }
                             isStartCapture = false;
                             currentFrame = null;
@@ -470,7 +469,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                     Log.e(TAG, "拍照失败:" + e.getMessage());
                     postDelayed(() -> {
                         if (callback != null && currentFrame != null && currentFrame.length > 0) {
-                            callback.onTakePicture(mPreviewCamera, buildImageInfo(currentFrame, true, mPreviewCamera));
+                            callback.onTakePicture(mPreviewCamera, buildImageInfo(currentFrame, true, null, mPreviewCamera));
                         }
                     }, 250);
                     e.printStackTrace();
@@ -479,45 +478,14 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                 Log.e(TAG, "相机未预览");
                 postDelayed(() -> {
                     if (callback != null && currentFrame != null && currentFrame.length > 0) {
-                        callback.onTakePicture(mPreviewCamera, buildImageInfo(currentFrame, true, mPreviewCamera));
+                        callback.onTakePicture(mPreviewCamera, buildImageInfo(currentFrame, true, null, mPreviewCamera));
                     }
                 }, 250);
             }
         }
     }
 
-    private ImageInfo buildImageInfo(byte[] data, boolean isYuv, Camera camera) {
-        Camera.CameraInfo info = new Camera.CameraInfo();
-        Camera.getCameraInfo(mCameraId, info);
-
-        ImageInfo imageInfo = new ImageInfo();
-        imageInfo.setData(data);
-        imageInfo.setYuv(isYuv);
-
-        int degrees = OldCameraUtil.getOldRotationDegrees(getContext(), mCameraId);
-        imageInfo.setDegrees(degrees);
-
-        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
-        if (isYuv) {
-            bitmap = yuvToJpeg(data, camera);
-        }
-
-        int orientation = getContext().getResources().getConfiguration().orientation;
-        imageInfo.setPortrait(orientation == Configuration.ORIENTATION_PORTRAIT);
-
-        if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            imageInfo.setFront(true);
-            if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-                bitmap = OldCameraUtil.flipBitmapVertically(bitmap);
-            }
-        } else {
-            imageInfo.setFront(false);
-        }
-        imageInfo.setBitmap(bitmap);
-        return imageInfo;
-    }
-
-    public final void takePicture2(TakePictureCallback2 callback) {
+    public final void takePicture2(TakePictureCallback callback) {
         currentFrame = null;
         if (mCamera != null && isCameraPreview) {
             isStartCapture = true;
@@ -531,11 +499,11 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                                 public void onPixelCopyFinished(int copyResult) {
                                     if (callback != null) {
                                         if (copyResult == PixelCopy.SUCCESS) {
-                                            callback.onTakePicture(buildImageInfo2(bitmap, false));
+                                            callback.onTakePicture(mCamera, buildImageInfo2(mCamera, null, bitmap, false));
                                         } else {
                                             postDelayed(() -> {
                                                 if (currentFrame != null && currentFrame.length > 0 && mPreviewCamera != null) {
-                                                    callback.onTakePicture(buildImageInfo2(yuvToJpeg(currentFrame, mPreviewCamera), true));
+                                                    callback.onTakePicture(mPreviewCamera, buildImageInfo2(mPreviewCamera, currentFrame, yuvToJpeg(currentFrame, mPreviewCamera), true));
                                                 }
                                             }, 250);
                                         }
@@ -551,7 +519,7 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                     );
                     postDelayed(() -> {
                         if (currentFrame != null && currentFrame.length > 0 && mPreviewCamera != null) {
-                            callback.onTakePicture(buildImageInfo2(yuvToJpeg(currentFrame, mPreviewCamera), true));
+                            callback.onTakePicture(mPreviewCamera, buildImageInfo2(mPreviewCamera, currentFrame, yuvToJpeg(currentFrame, mPreviewCamera), true));
                         }
                     }, 250);
                 }
@@ -559,22 +527,43 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
                 e.printStackTrace();
                 postDelayed(() -> {
                     if (currentFrame != null && currentFrame.length > 0 && mPreviewCamera != null) {
-                        callback.onTakePicture(buildImageInfo2(yuvToJpeg(currentFrame, mPreviewCamera), true));
+                        callback.onTakePicture(mPreviewCamera, buildImageInfo2(mPreviewCamera, currentFrame, yuvToJpeg(currentFrame, mPreviewCamera), true));
                     }
                 }, 250);
             }
         }
     }
 
-    private ImageInfo2 buildImageInfo2(Bitmap bitmap, boolean isYuv) {
+    private ImageInfo buildImageInfo2(Camera camera, byte[] yuvData, Bitmap bitmap, boolean isYuvToBitmap) {
+        if (yuvData != null) {
+            return buildImageInfo(yuvData, isYuvToBitmap, bitmap, camera);
+        }
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+        byte[] data = stream.toByteArray();
+        return buildImageInfo(data, isYuvToBitmap, bitmap, camera);
+    }
+
+    private ImageInfo buildImageInfo(byte[] data, boolean isYuvToBitmap, Bitmap bmp, Camera camera) {
         Camera.CameraInfo info = new Camera.CameraInfo();
         Camera.getCameraInfo(mCameraId, info);
 
-        ImageInfo2 imageInfo = new ImageInfo2();
-        imageInfo.setYuv(isYuv);
+        ImageInfo imageInfo = new ImageInfo();
+        imageInfo.setData(data);
+        imageInfo.setYuvToBitmap(isYuvToBitmap);
 
         int degrees = OldCameraUtil.getOldRotationDegrees(getContext(), mCameraId);
         imageInfo.setDegrees(degrees);
+
+        Bitmap bitmap;
+        if (bmp != null) {
+            bitmap = bmp;
+        } else {
+            bitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+        }
+        if (isYuvToBitmap) {
+            bitmap = yuvToJpeg(data, camera);
+        }
 
         int orientation = getContext().getResources().getConfiguration().orientation;
         imageInfo.setPortrait(orientation == Configuration.ORIENTATION_PORTRAIT);

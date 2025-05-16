@@ -68,7 +68,7 @@ class CameraPreviewView : RelativeLayout {
         cameraView.takePicture(callback)
     }
 
-    fun takePicture2(callback: TakePictureCallback2) {
+    fun takePicture2(callback: TakePictureCallback) {
         cameraView.takePicture2(callback)
     }
 
