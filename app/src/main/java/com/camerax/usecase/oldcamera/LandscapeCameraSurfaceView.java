@@ -447,7 +447,6 @@ public class LandscapeCameraSurfaceView extends SurfaceView implements SurfaceHo
         return targetRatio;
     }
 
-
     public final void takePicture(TakePictureCallback callback) {
         currentFrame = null;
         if (mCamera != null) {

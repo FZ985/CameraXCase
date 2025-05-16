@@ -44,28 +44,28 @@ class OldCameraActivity : AppCompatActivity() {
 
         binding.camera.bindToLifecycle(this)
         binding.capture.setOnClickListener {
-//            binding.camera.takePicture(object : TakePictureCallback {
-//                override fun onTakePicture(
-//                    camera: Camera,
-//                    image: ImageInfo
-//                ) {
-//                    MainActivity.bitmap = CameraUtil.rotateBitmap(image.bitmap!!, image.degrees)
-//                    setResult(RESULT_OK, Intent())
-//                    finish()
-//                }
-//            })
-
-            binding.camera.takePicture2(object : TakePictureCallback {
-                override fun onTakePicture(camera: Camera, image: ImageInfo) {
-                    MainActivity.bitmap =
-                        if (image.isYuvToBitmap) CameraUtil.rotateBitmap(
-                            image.bitmap!!,
-                            image.degrees
-                        ) else image.bitmap
+            binding.camera.takePicture(object : TakePictureCallback {
+                override fun onTakePicture(
+                    camera: Camera,
+                    image: ImageInfo
+                ) {
+                    MainActivity.bitmap = CameraUtil.rotateBitmap(image.bitmap!!, image.degrees)
                     setResult(RESULT_OK, Intent())
                     finish()
                 }
             })
+
+//            binding.camera.takePicture2(object : TakePictureCallback {
+//                override fun onTakePicture(camera: Camera, image: ImageInfo) {
+//                    MainActivity.bitmap =
+//                        if (image.isYuvToBitmap) CameraUtil.rotateBitmap(
+//                            image.bitmap!!,
+//                            image.degrees
+//                        ) else image.bitmap
+//                    setResult(RESULT_OK, Intent())
+//                    finish()
+//                }
+//            })
 
         }
 
