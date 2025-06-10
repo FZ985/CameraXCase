@@ -18,13 +18,13 @@ import androidx.camera.core.ImageCaptureException;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.UseCase;
 import androidx.camera.core.resolutionselector.ResolutionSelector;
+import androidx.camera.core.resolutionselector.ResolutionStrategy;
 import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import camerax.core.CameraCase;
-import camerax.core.tools.CameraUtil;
 import camerax.usecase.CameraXView;
 
 /**
@@ -63,9 +63,14 @@ public class CaptureCase extends BaseUseCase {
                 .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                 .setFlashMode(cameraView.getFlashMode())
                 .setJpegQuality(100)
-                .setResolutionSelector(new ResolutionSelector.Builder()
-                        .setAspectRatioStrategy(CameraUtil.aspectRatioStrategy(cameraView.getWidth(), cameraView.getHeight()))
-                        .build())
+//                .setResolutionSelector(new ResolutionSelector.Builder()
+//                        .setAspectRatioStrategy(CameraUtil.aspectRatioStrategy(cameraView.getWidth(), cameraView.getHeight()))
+//                        .build())
+                .setResolutionSelector(
+                        new ResolutionSelector.Builder()
+                                .setResolutionStrategy(ResolutionStrategy.HIGHEST_AVAILABLE_STRATEGY)
+                                .build()
+                )
                 .setTargetRotation(cameraView.getDisplay().getRotation())
                 .build();
     }
